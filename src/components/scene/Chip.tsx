@@ -1,33 +1,42 @@
 import { useMemo, useState } from "react";
 import * as THREE from "three";
+import { Instances, Instance } from "@react-three/drei";
 import { useStore } from "@/store/useStore";
 import type { ChipDef } from "@/data/chips";
 
-const PIN_COLOR = "#b8860b";
-const BODY_COLOR = "#1a1a1a";
+// Tin/silver-plated leads (most commercial QFP packages), not gold --
+// gold-plated leads are mostly an aerospace/high-rel thing.
+const PIN_COLOR = "#b8b8ae";
+const BODY_COLOR = "#3f3f42";
+const PIN_WIDTH = 0.05;
+const PIN_DEPTH = 0.4;
+const PIN_PITCH = 0.2;
 
-interface Pin {
-  position: [number, number, number];
-  size: [number, number, number];
-}
+function buildPinPositions(sizeX: number, sizeZ: number, pinHeight: number) {
+  const countZ = Math.max(4, Math.floor(sizeZ / PIN_PITCH));
+  const countX = Math.max(4, Math.floor(sizeX / PIN_PITCH));
+  const spacingZ = sizeZ / (countZ + 1);
+  const spacingX = sizeX / (countX + 1);
 
-function buildPins(sizeX: number, sizeY: number, sizeZ: number): Pin[] {
-  const pinCount = sizeZ > 2.5 ? 5 : 4;
-  const pinWidth = 0.15;
-  const pinHeight = sizeY * 0.5;
-  const pinDepth = 0.4;
-  const spacing = sizeZ / (pinCount + 1);
-  const pins: Pin[] = [];
+  // Pins on the ±X faces (box oriented [PIN_WIDTH, h, PIN_DEPTH]).
+  const xSidePins: [number, number, number][] = [];
   for (const side of [1, -1] as const) {
-    for (let i = 1; i <= pinCount; i++) {
-      const z = -sizeZ / 2 + spacing * i;
-      pins.push({
-        position: [side * (sizeX / 2 + pinWidth / 2), pinHeight / 2, z],
-        size: [pinWidth, pinHeight, pinDepth],
-      });
+    for (let i = 1; i <= countZ; i++) {
+      const z = -sizeZ / 2 + spacingZ * i;
+      xSidePins.push([side * (sizeX / 2 + PIN_WIDTH / 2), pinHeight / 2, z]);
     }
   }
-  return pins;
+
+  // Pins on the ±Z faces (box oriented [PIN_DEPTH, h, PIN_WIDTH]).
+  const zSidePins: [number, number, number][] = [];
+  for (const side of [1, -1] as const) {
+    for (let i = 1; i <= countX; i++) {
+      const x = -sizeX / 2 + spacingX * i;
+      zSidePins.push([x, pinHeight / 2, side * (sizeZ / 2 + PIN_WIDTH / 2)]);
+    }
+  }
+
+  return { xSidePins, zSidePins };
 }
 
 // Drawn locally on a <canvas> rather than via drei's <Text> (troika-three-text),
@@ -71,7 +80,11 @@ export default function Chip({ chipDef, silkscreenTexture }: ChipProps) {
 
   const isCpu = chipDef.id === "cpu";
   const [sizeX, sizeY, sizeZ] = chipDef.size;
-  const pins = useMemo(() => buildPins(sizeX, sizeY, sizeZ), [sizeX, sizeY, sizeZ]);
+  const pinHeight = sizeY * 0.45;
+  const { xSidePins, zSidePins } = useMemo(
+    () => buildPinPositions(sizeX, sizeZ, pinHeight),
+    [sizeX, sizeZ, pinHeight],
+  );
   const labelTexture = useMemo(
     () => createLabelTexture(chipDef.label, sizeX / sizeZ),
     [chipDef.label, sizeX, sizeZ],
@@ -99,17 +112,31 @@ export default function Chip({ chipDef, silkscreenTexture }: ChipProps) {
         <meshStandardMaterial
           color={BODY_COLOR}
           emissive={hovered ? "#3a2a00" : "#000000"}
-          roughness={0.4}
-          metalness={0.3}
+          roughness={0.55}
+          metalness={0.15}
         />
       </mesh>
 
-      {pins.map((pin, i) => (
-        <mesh key={i} position={pin.position}>
-          <boxGeometry args={pin.size} />
-          <meshStandardMaterial color={PIN_COLOR} roughness={0.3} metalness={0.8} />
-        </mesh>
-      ))}
+      {/* Pin-1 indicator dot, like real IC packages. */}
+      <mesh position={[sizeX / 2 - 0.22, sizeY + 0.002, -sizeZ / 2 + 0.22]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.06, 12]} />
+        <meshStandardMaterial color="#9a9a92" roughness={0.6} />
+      </mesh>
+
+      <Instances limit={xSidePins.length} castShadow={false}>
+        <boxGeometry args={[PIN_WIDTH, pinHeight, PIN_DEPTH]} />
+        <meshStandardMaterial color={PIN_COLOR} roughness={0.35} metalness={0.7} />
+        {xSidePins.map((p, i) => (
+          <Instance key={i} position={p} />
+        ))}
+      </Instances>
+      <Instances limit={zSidePins.length} castShadow={false}>
+        <boxGeometry args={[PIN_DEPTH, pinHeight, PIN_WIDTH]} />
+        <meshStandardMaterial color={PIN_COLOR} roughness={0.35} metalness={0.7} />
+        {zSidePins.map((p, i) => (
+          <Instance key={i} position={p} />
+        ))}
+      </Instances>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, sizeY + 0.01, 0]}>
         <planeGeometry args={[sizeX * 0.85, sizeZ * 0.85]} />
