@@ -1,15 +1,16 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { isFarFromChips, isFarFromTraces, mulberry32 } from "@/utils/exclusionZones";
+import { BOARD_LAYOUT } from "@/data/boardLayout";
 
 const BOARD_WIDTH = 40;
 const BOARD_DEPTH = 30;
 const BOARD_THICKNESS = 0.4;
 const TEXTURE_WIDTH = 2048;
 
-interface FillerTrace {
-  points: [number, number][]; // world (x, z)
-}
+// Matches the functional trace's idle color (useElectricity.ts's uColorGold)
+// so decorative and navigable traces read as the same physical material.
+const TRACE_GOLD = "#d4a017";
 
 function toPixel(x: number, z: number, canvas: HTMLCanvasElement): [number, number] {
   return [(x / BOARD_WIDTH + 0.5) * canvas.width, (z / BOARD_DEPTH + 0.5) * canvas.height];
@@ -39,47 +40,44 @@ function drawCopperPours(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElemen
   }
 }
 
-// Short Manhattan polylines that don't connect to anything functional --
-// pure board clutter, same as a real assembly. Reuses the same
-// chip/functional-trace exclusion the 3D passives use so this stays off
-// the things that matter; a candidate is simply cut short (not retried)
-// the moment a leg would cross into an exclusion zone or off the board.
-function generateFillerTraces(rng: () => number, count: number): FillerTrace[] {
-  const halfX = BOARD_WIDTH / 2 - 1.5;
-  const halfZ = BOARD_DEPTH / 2 - 1.5;
-  const traces: FillerTrace[] = [];
-
-  for (let i = 0; i < count; i++) {
-    let x = (rng() * 2 - 1) * halfX;
-    let z = (rng() * 2 - 1) * halfZ;
-    if (!isFarFromChips(x, z, 0.6) || !isFarFromTraces(x, z, 0.35)) continue;
-
-    const points: [number, number][] = [[x, z]];
-    const segments = 1 + Math.floor(rng() * 3);
-    let axis: "x" | "z" = rng() > 0.5 ? "x" : "z";
-    for (let s = 0; s < segments; s++) {
-      const length = 0.8 + rng() * 2.4;
-      const dir = rng() > 0.5 ? 1 : -1;
-      const nx = axis === "x" ? x + dir * length : x;
-      const nz = axis === "z" ? z + dir * length : z;
-      if (Math.abs(nx) > halfX || Math.abs(nz) > halfZ) break;
-      if (!isFarFromChips(nx, nz, 0.6) || !isFarFromTraces(nx, nz, 0.35)) break;
-      x = nx;
-      z = nz;
-      points.push([x, z]);
-      axis = axis === "x" ? "z" : "x";
-    }
-    if (points.length >= 2) traces.push({ points });
+// Decorative traces, component pads, and chip-pin pads all read straight
+// from BOARD_LAYOUT (src/data/boardLayout.ts) -- one connected generator
+// shared with PassiveComponents.tsx and Chip.tsx, so every gold line on the
+// texture actually terminates at a real pad/via instead of crossing the
+// board arbitrarily.
+function drawPinPads(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  const scaleX = canvas.width / BOARD_WIDTH;
+  const scaleZ = canvas.height / BOARD_DEPTH;
+  ctx.fillStyle = TRACE_GOLD;
+  for (const pad of BOARD_LAYOUT.pinPads) {
+    const [px, py] = toPixel(pad.x, pad.z, canvas);
+    const w = pad.sizeX * scaleX;
+    const h = pad.sizeZ * scaleZ;
+    ctx.fillRect(px - w / 2, py - h / 2, w, h);
   }
-  return traces;
 }
 
-function drawFillerTraces(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, traces: FillerTrace[]) {
-  ctx.strokeStyle = "rgba(150,140,110,0.45)";
-  ctx.lineWidth = Math.max(1, canvas.width * 0.0012);
+function drawComponentPads(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  const padSize = canvas.width * 0.0042;
+  ctx.fillStyle = TRACE_GOLD;
+  for (const comp of BOARD_LAYOUT.components) {
+    for (const [x, z] of [comp.padA, comp.padB]) {
+      const [px, py] = toPixel(x, z, canvas);
+      ctx.fillRect(px - padSize / 2, py - padSize / 2, padSize, padSize);
+    }
+  }
+}
+
+// Slightly thinner than the raised 3D trace tubes (radius 0.15, diameter
+// 0.3 world units) so the navigable paths stay visually primary, but the
+// same gold "material" -- not the old muted-gray hairline look.
+function drawDecorativeTraces(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  const widthWorld = 0.22;
+  ctx.strokeStyle = TRACE_GOLD;
+  ctx.lineWidth = Math.max(1, widthWorld * (canvas.width / BOARD_WIDTH));
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  for (const trace of traces) {
+  for (const trace of BOARD_LAYOUT.traces) {
     ctx.beginPath();
     trace.points.forEach(([x, z], i) => {
       const [px, py] = toPixel(x, z, canvas);
@@ -90,21 +88,19 @@ function drawFillerTraces(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasEleme
   }
 }
 
-function drawVias(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, traces: FillerTrace[]) {
-  const outerR = canvas.width * 0.0035;
+function drawVias(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  const outerR = canvas.width * 0.004;
   const innerR = outerR * 0.55;
-  for (const trace of traces) {
-    for (const [x, z] of trace.points) {
-      const [px, py] = toPixel(x, z, canvas);
-      ctx.beginPath();
-      ctx.arc(px, py, outerR, 0, Math.PI * 2);
-      ctx.fillStyle = "#8a6a2a";
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(px, py, innerR, 0, Math.PI * 2);
-      ctx.fillStyle = "#0a0a0a";
-      ctx.fill();
-    }
+  for (const [x, z] of BOARD_LAYOUT.vias) {
+    const [px, py] = toPixel(x, z, canvas);
+    ctx.beginPath();
+    ctx.arc(px, py, outerR, 0, Math.PI * 2);
+    ctx.fillStyle = TRACE_GOLD;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(px, py, innerR, 0, Math.PI * 2);
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fill();
   }
 }
 
@@ -174,9 +170,10 @@ function createBoardTexture(): THREE.CanvasTexture {
 
   drawCopperPours(ctx, canvas, rng);
 
-  const fillerTraces = generateFillerTraces(rng, 180);
-  drawFillerTraces(ctx, canvas, fillerTraces);
-  drawVias(ctx, canvas, fillerTraces);
+  drawDecorativeTraces(ctx, canvas);
+  drawPinPads(ctx, canvas);
+  drawComponentPads(ctx, canvas);
+  drawVias(ctx, canvas);
 
   drawFiducials(ctx, canvas, rng, 8);
   drawDesignators(ctx, canvas, rng, 35);

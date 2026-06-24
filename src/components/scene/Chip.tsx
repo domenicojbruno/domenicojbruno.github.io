@@ -3,41 +3,12 @@ import * as THREE from "three";
 import { Instances, Instance } from "@react-three/drei";
 import { useStore } from "@/store/useStore";
 import type { ChipDef } from "@/data/chips";
+import { buildPinPositions, PIN_WIDTH, PIN_DEPTH } from "@/utils/pinLayout";
 
 // Tin/silver-plated leads (most commercial QFP packages), not gold --
 // gold-plated leads are mostly an aerospace/high-rel thing.
 const PIN_COLOR = "#b8b8ae";
 const BODY_COLOR = "#3f3f42";
-const PIN_WIDTH = 0.05;
-const PIN_DEPTH = 0.4;
-const PIN_PITCH = 0.2;
-
-function buildPinPositions(sizeX: number, sizeZ: number, pinHeight: number) {
-  const countZ = Math.max(4, Math.floor(sizeZ / PIN_PITCH));
-  const countX = Math.max(4, Math.floor(sizeX / PIN_PITCH));
-  const spacingZ = sizeZ / (countZ + 1);
-  const spacingX = sizeX / (countX + 1);
-
-  // Pins on the ±X faces (box oriented [PIN_WIDTH, h, PIN_DEPTH]).
-  const xSidePins: [number, number, number][] = [];
-  for (const side of [1, -1] as const) {
-    for (let i = 1; i <= countZ; i++) {
-      const z = -sizeZ / 2 + spacingZ * i;
-      xSidePins.push([side * (sizeX / 2 + PIN_WIDTH / 2), pinHeight / 2, z]);
-    }
-  }
-
-  // Pins on the ±Z faces (box oriented [PIN_DEPTH, h, PIN_WIDTH]).
-  const zSidePins: [number, number, number][] = [];
-  for (const side of [1, -1] as const) {
-    for (let i = 1; i <= countX; i++) {
-      const x = -sizeX / 2 + spacingX * i;
-      zSidePins.push([x, pinHeight / 2, side * (sizeZ / 2 + PIN_WIDTH / 2)]);
-    }
-  }
-
-  return { xSidePins, zSidePins };
-}
 
 // Drawn locally on a <canvas> rather than via drei's <Text> (troika-three-text),
 // which lazily fetches its default font from a CDN at render time -- an
@@ -81,9 +52,14 @@ export default function Chip({ chipDef, silkscreenTexture }: ChipProps) {
   const isCpu = chipDef.id === "cpu";
   const [sizeX, sizeY, sizeZ] = chipDef.size;
   const pinHeight = sizeY * 0.45;
-  const { xSidePins, zSidePins } = useMemo(
-    () => buildPinPositions(sizeX, sizeZ, pinHeight),
-    [sizeX, sizeZ, pinHeight],
+  const pins = useMemo(() => buildPinPositions(sizeX, sizeZ, pinHeight), [sizeX, sizeZ, pinHeight]);
+  const xSidePins = useMemo(
+    () => pins.filter((p) => p.side === "+x" || p.side === "-x").map((p) => p.position),
+    [pins],
+  );
+  const zSidePins = useMemo(
+    () => pins.filter((p) => p.side === "+z" || p.side === "-z").map((p) => p.position),
+    [pins],
   );
   const labelTexture = useMemo(
     () => createLabelTexture(chipDef.label, sizeX / sizeZ),
