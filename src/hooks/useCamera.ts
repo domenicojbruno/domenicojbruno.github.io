@@ -192,6 +192,7 @@ export function useCamera(electricity: ReturnType<typeof useElectricity>) {
         controls.target.copy(finalLook);
         controls.update();
         controls.enabled = true;
+        electricity.resetPulse();
         useStore.getState().setTransitioning(false);
         scheduleIdleTimer();
       },

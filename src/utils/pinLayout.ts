@@ -3,8 +3,8 @@
 // drift apart.
 
 export const PIN_WIDTH = 0.05;
-export const PIN_DEPTH = 0.4;
-export const PIN_PITCH = 0.2;
+export const PIN_DEPTH = 0.5;
+export const PIN_PITCH = 0.13;
 
 export interface PinPosition {
   /** Local-space position relative to the chip's own origin. */

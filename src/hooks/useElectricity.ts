@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
+import { PCB_COLORS } from "@/utils/pcbColors";
 
 export interface ElectricityUniforms {
   uProgress: THREE.IUniform<number>;
@@ -8,7 +9,7 @@ export interface ElectricityUniforms {
   uPulseWidth: THREE.IUniform<number>;
   uTailLength: THREE.IUniform<number>;
   uResidualGlow: THREE.IUniform<number>;
-  uColorGold: THREE.IUniform<THREE.Color>;
+  uColorIdle: THREE.IUniform<THREE.Color>;
   uColorPulse: THREE.IUniform<THREE.Color>;
   uColorTip: THREE.IUniform<THREE.Color>;
   // Index signature so this satisfies R3F's shaderMaterial `uniforms` prop type.
@@ -27,9 +28,9 @@ export function createElectricityUniforms(): ElectricityUniforms {
     uPulseWidth: { value: 0.04 },
     uTailLength: { value: 0.25 },
     uResidualGlow: { value: 0.35 },
-    uColorGold: { value: new THREE.Color("#d4a017") },
-    uColorPulse: { value: new THREE.Color("#ffe066") },
-    uColorTip: { value: new THREE.Color("#ffffff") },
+    uColorIdle: { value: new THREE.Color(PCB_COLORS.maskOverTrace) },
+    uColorPulse: { value: new THREE.Color(PCB_COLORS.pulseCore) },
+    uColorTip: { value: new THREE.Color(PCB_COLORS.pulseTip) },
   };
 }
 

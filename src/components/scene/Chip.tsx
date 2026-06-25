@@ -4,10 +4,11 @@ import { Instances, Instance } from "@react-three/drei";
 import { useStore } from "@/store/useStore";
 import type { ChipDef } from "@/data/chips";
 import { buildPinPositions, PIN_WIDTH, PIN_DEPTH } from "@/utils/pinLayout";
+import { PCB_COLORS } from "@/utils/pcbColors";
 
 // Tin/silver-plated leads (most commercial QFP packages), not gold --
 // gold-plated leads are mostly an aerospace/high-rel thing.
-const PIN_COLOR = "#b8b8ae";
+const PIN_COLOR = PCB_COLORS.leadTin;
 const BODY_COLOR = "#3f3f42";
 
 // Drawn locally on a <canvas> rather than via drei's <Text> (troika-three-text),
@@ -101,14 +102,14 @@ export default function Chip({ chipDef, silkscreenTexture }: ChipProps) {
 
       <Instances limit={xSidePins.length} castShadow={false}>
         <boxGeometry args={[PIN_WIDTH, pinHeight, PIN_DEPTH]} />
-        <meshStandardMaterial color={PIN_COLOR} roughness={0.35} metalness={0.7} />
+        <meshStandardMaterial color={PIN_COLOR} roughness={0.22} metalness={0.85} />
         {xSidePins.map((p, i) => (
           <Instance key={i} position={p} />
         ))}
       </Instances>
       <Instances limit={zSidePins.length} castShadow={false}>
         <boxGeometry args={[PIN_DEPTH, pinHeight, PIN_WIDTH]} />
-        <meshStandardMaterial color={PIN_COLOR} roughness={0.35} metalness={0.7} />
+        <meshStandardMaterial color={PIN_COLOR} roughness={0.22} metalness={0.85} />
         {zSidePins.map((p, i) => (
           <Instance key={i} position={p} />
         ))}

@@ -44,7 +44,7 @@ export const CHIPS: ChipDef[] = [
     id: "projects",
     direction: "N",
     label: "U1 / PROJECTS",
-    position: [3, 0, -10],
+    position: [5, 0, -14],
     size: [1.5, SATELLITE_HEIGHT, 2],
     cameraFraming: {
       offset: [0, 6.5, 6],
@@ -55,7 +55,7 @@ export const CHIPS: ChipDef[] = [
     id: "experience",
     direction: "E",
     label: "U2 / EXPERIENCE",
-    position: [10, 0, 3],
+    position: [14, 0, 5],
     size: [1.5, SATELLITE_HEIGHT, 2],
     cameraFraming: {
       offset: [0, 6.5, 6],
@@ -66,7 +66,7 @@ export const CHIPS: ChipDef[] = [
     id: "contact",
     direction: "S",
     label: "U3 / CONTACT",
-    position: [-3, 0, 10],
+    position: [-6, 0, 15],
     size: [1.5, SATELLITE_HEIGHT, 2],
     cameraFraming: {
       offset: [0, 6.5, 6],
@@ -77,7 +77,7 @@ export const CHIPS: ChipDef[] = [
     id: "about",
     direction: "W",
     label: "U4 / ABOUT",
-    position: [-10, 0, -3],
+    position: [-13, 0, -7],
     size: [1.5, SATELLITE_HEIGHT, 2],
     cameraFraming: {
       offset: [0, 6.5, 6],
@@ -87,7 +87,7 @@ export const CHIPS: ChipDef[] = [
 ];
 
 export const OVERVIEW_CAMERA: CameraFraming = {
-  offset: [0, 22, 0.01],
+  offset: [0, 30, 0.01],
   lookAtOffset: [0, 0, 0],
 };
 
@@ -112,40 +112,40 @@ export const TRACES: TraceDef[] = [
     chipId: "projects",
     waypoints: [
       [0, TRACE_Y, -1.5],
-      [0, TRACE_Y, -10],
-      [2.25, TRACE_Y, -10],
+      [0, TRACE_Y, -14],
+      [4.25, TRACE_Y, -14],
     ],
-    radius: 0.15,
+    radius: 0.045,
   },
   {
     id: "cpu-experience",
     chipId: "experience",
     waypoints: [
       [1.5, TRACE_Y, 0],
-      [10, TRACE_Y, 0],
-      [10, TRACE_Y, 2],
+      [14, TRACE_Y, 0],
+      [14, TRACE_Y, 4],
     ],
-    radius: 0.15,
+    radius: 0.045,
   },
   {
     id: "cpu-contact",
     chipId: "contact",
     waypoints: [
       [0, TRACE_Y, 1.5],
-      [0, TRACE_Y, 10],
-      [-2.25, TRACE_Y, 10],
+      [0, TRACE_Y, 15],
+      [-5.25, TRACE_Y, 15],
     ],
-    radius: 0.15,
+    radius: 0.045,
   },
   {
     id: "cpu-about",
     chipId: "about",
     waypoints: [
       [-1.5, TRACE_Y, 0],
-      [-10, TRACE_Y, 0],
-      [-10, TRACE_Y, -2],
+      [-13, TRACE_Y, 0],
+      [-13, TRACE_Y, -6],
     ],
-    radius: 0.15,
+    radius: 0.045,
   },
 ];
 

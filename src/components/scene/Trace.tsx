@@ -2,10 +2,11 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import type { TraceDef, TraceGeometryData } from "@/data/chips";
 import { createElectricityUniforms, type ElectricityUniforms } from "@/hooks/useElectricity";
+import { PCB_COLORS } from "@/utils/pcbColors";
 import vertexShader from "@/shaders/electricity.vert.glsl?raw";
 import fragmentShader from "@/shaders/electricity.frag.glsl?raw";
 
-const VIA_COLOR = "#b8860b";
+const VIA_COLOR = PCB_COLORS.padGold;
 
 interface TraceProps {
   traceDef: TraceDef;

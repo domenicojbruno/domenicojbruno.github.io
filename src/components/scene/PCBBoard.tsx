@@ -1,85 +1,77 @@
 import { useMemo } from "react";
 import * as THREE from "three";
-import { isFarFromChips, isFarFromTraces, mulberry32 } from "@/utils/exclusionZones";
+import { mulberry32 } from "@/utils/exclusionZones";
 import { BOARD_LAYOUT } from "@/data/boardLayout";
+import { TRACES } from "@/data/chips";
+import { PCB_COLORS } from "@/utils/pcbColors";
 
-const BOARD_WIDTH = 40;
-const BOARD_DEPTH = 30;
+const BOARD_WIDTH = 42;
+const BOARD_DEPTH = 40;
 const BOARD_THICKNESS = 0.4;
 const TEXTURE_WIDTH = 2048;
+const MARGIN_PX = TEXTURE_WIDTH * 0.025;
 
-// Matches the functional trace's idle color (useElectricity.ts's uColorGold)
-// so decorative and navigable traces read as the same physical material.
-const TRACE_GOLD = "#d4a017";
+// One width for every trace on the board, canvas/decorative and 3D/navigable
+// alike -- the click-triggered electricity pulse is the only thing that's
+// ever allowed to make a path look different from any other.
+const TRACE_WIDTH_PX = 2;
+const ISOLATION_WIDTH_PX = 1.5;
 
 function toPixel(x: number, z: number, canvas: HTMLCanvasElement): [number, number] {
   return [(x / BOARD_WIDTH + 0.5) * canvas.width, (z / BOARD_DEPTH + 0.5) * canvas.height];
 }
 
-// Soft-edged blobs in a slightly different green tint than the base mask --
-// the "you can see where copper was removed and filled with soldermask"
-// effect: copper-backed regions read as a faintly different green than
-// bare-fiberglass regions under the same mask.
-function drawCopperPours(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, rng: () => number) {
-  const patchCount = 8 + Math.floor(rng() * 6);
-  for (let p = 0; p < patchCount; p++) {
-    const cx = rng() * canvas.width;
-    const cy = rng() * canvas.height;
-    const baseR = (0.05 + rng() * 0.09) * canvas.width;
-    const lighter = rng() > 0.5;
-    ctx.fillStyle = lighter ? "rgba(45,150,85,0.07)" : "rgba(8,45,25,0.12)";
-    const blobs = 4 + Math.floor(rng() * 3);
-    for (let b = 0; b < blobs; b++) {
-      const ox = (rng() - 0.5) * baseR * 1.3;
-      const oy = (rng() - 0.5) * baseR * 1.3;
-      const r = baseR * (0.5 + rng() * 0.6);
-      ctx.beginPath();
-      ctx.arc(cx + ox, cy + oy, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
+// Local-space point (length axis = local +X) rotated by a component's
+// rotation.y angle -- same convention PassiveComponents.tsx uses for the 3D
+// boxes, so the silkscreen outline lines up with the real component.
+function rotateLocal(lx: number, lz: number, angle: number): [number, number] {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return [lx * c + lz * s, -lx * s + lz * c];
+}
+
+function drawBoardBase(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  // Perimeter margin (soldermask with no copper beneath) -- fill everything
+  // in that color first, then lay the dominant copper-pour ground plane on
+  // top, inset by the margin so only the border strip shows through.
+  ctx.fillStyle = PCB_COLORS.maskBase;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = PCB_COLORS.maskOverPour;
+  ctx.fillRect(MARGIN_PX, MARGIN_PX, canvas.width - MARGIN_PX * 2, canvas.height - MARGIN_PX * 2);
+}
+
+function drawFiberglassGrain(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, rng: () => number) {
+  for (let i = 0; i < 16000; i++) {
+    const x = rng() * canvas.width;
+    const y = rng() * canvas.height;
+    const a = rng() * 0.04;
+    ctx.fillStyle = `rgba(0,0,0,${a})`;
+    ctx.fillRect(x, y, 1, 1);
   }
 }
 
-// Decorative traces, component pads, and chip-pin pads all read straight
-// from BOARD_LAYOUT (src/data/boardLayout.ts) -- one connected generator
-// shared with PassiveComponents.tsx and Chip.tsx, so every gold line on the
-// texture actually terminates at a real pad/via instead of crossing the
-// board arbitrarily.
-function drawPinPads(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-  const scaleX = canvas.width / BOARD_WIDTH;
-  const scaleZ = canvas.height / BOARD_DEPTH;
-  ctx.fillStyle = TRACE_GOLD;
-  for (const pad of BOARD_LAYOUT.pinPads) {
-    const [px, py] = toPixel(pad.x, pad.z, canvas);
-    const w = pad.sizeX * scaleX;
-    const h = pad.sizeZ * scaleZ;
-    ctx.fillRect(px - w / 2, py - h / 2, w, h);
-  }
+// Every trace on the board -- every BOARD_LAYOUT.traces polyline, plus the
+// 4 functional CPU<->satellite paths -- gets the identical static channel
+// art baked in here. The 3D tube riding on top of the functional ones only
+// ever adds the idle/pulse color, never a different width or border.
+function allTracePolylines(): [number, number][][] {
+  const decorative = BOARD_LAYOUT.traces.map((t) => t.points);
+  const functional = TRACES.map((t) => t.waypoints.map(([x, , z]) => [x, z] as [number, number]));
+  return [...decorative, ...functional];
 }
 
-function drawComponentPads(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-  const padSize = canvas.width * 0.0042;
-  ctx.fillStyle = TRACE_GOLD;
-  for (const comp of BOARD_LAYOUT.components) {
-    for (const [x, z] of [comp.padA, comp.padB]) {
-      const [px, py] = toPixel(x, z, canvas);
-      ctx.fillRect(px - padSize / 2, py - padSize / 2, padSize, padSize);
-    }
-  }
-}
-
-// Slightly thinner than the raised 3D trace tubes (radius 0.15, diameter
-// 0.3 world units) so the navigable paths stay visually primary, but the
-// same gold "material" -- not the old muted-gray hairline look.
-function drawDecorativeTraces(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-  const widthWorld = 0.22;
-  ctx.strokeStyle = TRACE_GOLD;
-  ctx.lineWidth = Math.max(1, widthWorld * (canvas.width / BOARD_WIDTH));
+function drawIsolationChannels(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  polylines: [number, number][][],
+) {
+  ctx.strokeStyle = PCB_COLORS.isolationChannel;
+  ctx.lineWidth = TRACE_WIDTH_PX + ISOLATION_WIDTH_PX * 2;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  for (const trace of BOARD_LAYOUT.traces) {
+  for (const points of polylines) {
     ctx.beginPath();
-    trace.points.forEach(([x, z], i) => {
+    points.forEach(([x, z], i) => {
       const [px, py] = toPixel(x, z, canvas);
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
@@ -88,32 +80,146 @@ function drawDecorativeTraces(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasE
   }
 }
 
+function drawTraceBodies(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  polylines: [number, number][][],
+) {
+  ctx.strokeStyle = PCB_COLORS.maskOverTrace;
+  ctx.lineWidth = TRACE_WIDTH_PX;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const points of polylines) {
+    ctx.beginPath();
+    points.forEach(([x, z], i) => {
+      const [px, py] = toPixel(x, z, canvas);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+  }
+}
+
+function drawPinPads(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  const scaleX = canvas.width / BOARD_WIDTH;
+  const scaleZ = canvas.height / BOARD_DEPTH;
+  for (const pad of BOARD_LAYOUT.pinPads) {
+    const [px, py] = toPixel(pad.x, pad.z, canvas);
+    const w = pad.sizeX * scaleX;
+    const h = pad.sizeZ * scaleZ;
+    ctx.fillStyle = PCB_COLORS.padGold;
+    ctx.fillRect(px - w / 2, py - h / 2, w, h);
+    ctx.strokeStyle = PCB_COLORS.padBorder;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px - w / 2, py - h / 2, w, h);
+  }
+}
+
+function drawComponentPads(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  const padSize = canvas.width * 0.0042;
+  for (const comp of BOARD_LAYOUT.components) {
+    for (const [x, z] of [comp.padA, comp.padB]) {
+      const [px, py] = toPixel(x, z, canvas);
+      ctx.fillStyle = PCB_COLORS.padGold;
+      ctx.fillRect(px - padSize / 2, py - padSize / 2, padSize, padSize);
+      ctx.strokeStyle = PCB_COLORS.padBorder;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px - padSize / 2, py - padSize / 2, padSize, padSize);
+    }
+  }
+}
+
 function drawVias(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-  const outerR = canvas.width * 0.004;
-  const innerR = outerR * 0.55;
+  const outerR = canvas.width * 0.0035;
+  const innerR = outerR * 0.4;
   for (const [x, z] of BOARD_LAYOUT.vias) {
     const [px, py] = toPixel(x, z, canvas);
     ctx.beginPath();
     ctx.arc(px, py, outerR, 0, Math.PI * 2);
-    ctx.fillStyle = TRACE_GOLD;
+    ctx.fillStyle = PCB_COLORS.padGold;
     ctx.fill();
+    ctx.strokeStyle = PCB_COLORS.padBorder;
+    ctx.lineWidth = 1;
+    ctx.stroke();
     ctx.beginPath();
     ctx.arc(px, py, innerR, 0, Math.PI * 2);
-    ctx.fillStyle = "#0a0a0a";
+    ctx.fillStyle = PCB_COLORS.drillHole;
     ctx.fill();
   }
 }
 
-// Sparse registration/fiducial marks -- a full uniform grid (the Phase 1
-// look) reads as schematic, not photographic.
-function drawFiducials(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, rng: () => number, count: number) {
-  ctx.strokeStyle = "rgba(232,232,208,0.25)";
-  ctx.lineWidth = 1.5;
+// Component footprints, designators, polarity ticks, test points, and a
+// sparse set of fiducials -- all tied to BOARD_LAYOUT's real geometry
+// (nothing here is placed independently of an actual component/via), and
+// drawn last so the silkscreen sits visibly on top of every other layer.
+function drawSilkscreen(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  ctx.strokeStyle = PCB_COLORS.silkscreen;
+  ctx.fillStyle = PCB_COLORS.silkscreen;
+  ctx.font = `${Math.round(canvas.width * 0.0075)}px 'JetBrains Mono', 'Share Tech Mono', ui-monospace, monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  for (const comp of BOARD_LAYOUT.components) {
+    const [ax, az] = comp.padA;
+    const [bx, bz] = comp.padB;
+    const padSpan = Math.hypot(bx - ax, bz - az);
+    const halfLength = padSpan / 2 + 0.04;
+    const halfWidth = (comp.type === "resistor" ? 0.11 : 0.12);
+
+    const corners: [number, number][] = [
+      [halfLength, halfWidth],
+      [halfLength, -halfWidth],
+      [-halfLength, -halfWidth],
+      [-halfLength, halfWidth],
+    ].map(([lx, lz]) => {
+      const [ox, oz] = rotateLocal(lx, lz, comp.angle);
+      return toPixel(comp.center[0] + ox, comp.center[1] + oz, canvas);
+    });
+
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    corners.forEach(([px, py], i) => {
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+    ctx.stroke();
+
+    if (comp.type === "capacitor") {
+      // Polarity tick at the padA end, just inside the outline.
+      const [tx1, tz1] = rotateLocal(halfLength - 0.05, halfWidth, comp.angle);
+      const [tx2, tz2] = rotateLocal(halfLength - 0.05, -halfWidth, comp.angle);
+      const [px1, py1] = toPixel(comp.center[0] + tx1, comp.center[1] + tz1, canvas);
+      const [px2, py2] = toPixel(comp.center[0] + tx2, comp.center[1] + tz2, canvas);
+      ctx.beginPath();
+      ctx.moveTo(px1, py1);
+      ctx.lineTo(px2, py2);
+      ctx.stroke();
+    }
+
+    const [lx, lz] = rotateLocal(0, halfWidth + 0.18, comp.angle);
+    const [lpx, lpy] = toPixel(comp.center[0] + lx, comp.center[1] + lz, canvas);
+    ctx.fillText(comp.designator, lpx, lpy);
+  }
+
+  for (const tp of BOARD_LAYOUT.testPoints) {
+    const [px, py] = toPixel(tp.x, tp.z, canvas);
+    ctx.fillText(tp.label, px, py - canvas.width * 0.012);
+  }
+
+  // Exactly 3 fiducials near 3 of the 4 corners -- intentionally asymmetric,
+  // the way real pick-and-place registration marks are placed.
+  const inset = 2.2;
+  const fiducialSpots: [number, number][] = [
+    [-(BOARD_WIDTH / 2 - inset), -(BOARD_DEPTH / 2 - inset)],
+    [BOARD_WIDTH / 2 - inset, -(BOARD_DEPTH / 2 - inset)],
+    [-(BOARD_WIDTH / 2 - inset), BOARD_DEPTH / 2 - inset],
+  ];
   const r = canvas.width * 0.006;
   const tick = canvas.width * 0.01;
-  for (let i = 0; i < count; i++) {
-    const px = rng() * canvas.width;
-    const py = rng() * canvas.height;
+  ctx.lineWidth = 1.5;
+  for (const [x, z] of fiducialSpots) {
+    const [px, py] = toPixel(x, z, canvas);
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.stroke();
@@ -126,29 +232,6 @@ function drawFiducials(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement,
   }
 }
 
-const DESIGNATOR_PREFIXES = ["R", "R", "R", "C", "C", "C", "U", "MH", "TP"];
-
-function drawDesignators(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, rng: () => number, count: number) {
-  ctx.fillStyle = "rgba(232,232,208,0.55)";
-  ctx.font = `${Math.round(canvas.width * 0.0085)}px 'JetBrains Mono', 'Share Tech Mono', ui-monospace, monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  let placed = 0;
-  let attempts = 0;
-  while (placed < count && attempts < count * 8) {
-    attempts++;
-    const x = (rng() * 2 - 1) * (BOARD_WIDTH / 2 - 2);
-    const z = (rng() * 2 - 1) * (BOARD_DEPTH / 2 - 2);
-    if (!isFarFromChips(x, z, 0.8) || !isFarFromTraces(x, z, 0.4)) continue;
-    const [px, py] = toPixel(x, z, canvas);
-    const prefix = DESIGNATOR_PREFIXES[Math.floor(rng() * DESIGNATOR_PREFIXES.length)];
-    const num = 1 + Math.floor(rng() * 220);
-    ctx.fillText(`${prefix}${num}`, px, py);
-    placed++;
-  }
-}
-
 function createBoardTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = TEXTURE_WIDTH;
@@ -156,42 +239,18 @@ function createBoardTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext("2d")!;
   const rng = mulberry32(2024);
 
-  ctx.fillStyle = "#1a6b3c";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawBoardBase(ctx, canvas);
+  drawFiberglassGrain(ctx, canvas, rng);
 
-  // Faint procedural fiberglass noise.
-  for (let i = 0; i < 16000; i++) {
-    const x = rng() * canvas.width;
-    const y = rng() * canvas.height;
-    const a = rng() * 0.04;
-    ctx.fillStyle = `rgba(0,0,0,${a})`;
-    ctx.fillRect(x, y, 1, 1);
-  }
+  const polylines = allTracePolylines();
+  drawIsolationChannels(ctx, canvas, polylines);
+  drawTraceBodies(ctx, canvas, polylines);
 
-  drawCopperPours(ctx, canvas, rng);
-
-  drawDecorativeTraces(ctx, canvas);
   drawPinPads(ctx, canvas);
   drawComponentPads(ctx, canvas);
   drawVias(ctx, canvas);
 
-  drawFiducials(ctx, canvas, rng, 8);
-  drawDesignators(ctx, canvas, rng, 35);
-
-  // Vignette toward the edges, standing in for baked ambient occlusion --
-  // drawn last so the inspection-light falloff covers the new detail too.
-  const gradient = ctx.createRadialGradient(
-    canvas.width / 2,
-    canvas.height / 2,
-    canvas.width * 0.25,
-    canvas.width / 2,
-    canvas.height / 2,
-    canvas.width * 0.65,
-  );
-  gradient.addColorStop(0, "rgba(0,0,0,0)");
-  gradient.addColorStop(1, "rgba(15,74,40,0.55)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawSilkscreen(ctx, canvas);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -211,7 +270,11 @@ export default function PCBBoard() {
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow={false}>
         <planeGeometry args={[BOARD_WIDTH - 0.3, BOARD_DEPTH - 0.3]} />
-        <meshStandardMaterial map={texture} roughness={0.35} metalness={0.1} />
+        {/* No `color` tint here -- the canvas texture already carries every
+            trace/pad/silkscreen color; a tinted `color` would multiply
+            against the map and muddy the gold pads. Only roughness/metalness
+            convey the LPI mask's overall sheen. */}
+        <meshStandardMaterial map={texture} roughness={0.72} metalness={0} />
       </mesh>
     </group>
   );

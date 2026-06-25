@@ -3,7 +3,7 @@ uniform float uDirection;
 uniform float uPulseWidth;
 uniform float uTailLength;
 uniform float uResidualGlow;
-uniform vec3 uColorGold;
+uniform vec3 uColorIdle;
 uniform vec3 uColorPulse;
 uniform vec3 uColorTip;
 
@@ -27,11 +27,10 @@ void main() {
 
   float intensity = clamp(edge + tail, 0.0, 1.0);
 
-  vec3 color = mix(uColorGold, uColorPulse, tail);
+  vec3 color = mix(uColorIdle, uColorPulse, tail);
   color = mix(color, uColorTip, edge);
 
-  vec3 idleColor = uColorGold * 0.6;
-  vec3 finalColor = mix(idleColor, color, max(intensity, residual));
+  vec3 finalColor = mix(uColorIdle, color, max(intensity, residual));
 
   gl_FragColor = vec4(finalColor, 1.0);
 }
