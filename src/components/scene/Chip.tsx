@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Instances, Instance } from "@react-three/drei";
 import { useStore } from "@/store/useStore";
 import type { ChipDef } from "@/data/chips";
-import { buildPinPositions, PIN_WIDTH, PIN_DEPTH } from "@/utils/pinLayout";
+import { buildPinPositions, PIN_WIDTH, PIN_DEPTH, PIN_FOOT_LENGTH, PIN_FOOT_HEIGHT } from "@/utils/pinLayout";
 import { PCB_COLORS } from "@/utils/pcbColors";
 
 // Tin/silver-plated leads (most commercial QFP packages), not gold --
@@ -53,15 +53,30 @@ export default function Chip({ chipDef, silkscreenTexture }: ChipProps) {
   const isCpu = chipDef.id === "cpu";
   const [sizeX, sizeY, sizeZ] = chipDef.size;
   const pinHeight = sizeY * 0.45;
-  const pins = useMemo(() => buildPinPositions(sizeX, sizeZ, pinHeight), [sizeX, sizeZ, pinHeight]);
-  const xSidePins = useMemo(
-    () => pins.filter((p) => p.side === "+x" || p.side === "-x").map((p) => p.position),
-    [pins],
+  const pins = useMemo(() => buildPinPositions(sizeX, sizeZ), [sizeX, sizeZ]);
+  const xSidePins = useMemo(() => pins.filter((p) => p.side === "+x" || p.side === "-x"), [pins]);
+  const zSidePins = useMemo(() => pins.filter((p) => p.side === "+z" || p.side === "-z"), [pins]);
+  // Gull-wing silhouette: a tall "knee" box spanning the body edge to the
+  // foot, plus a thin flat "foot" box at the pin's anchor (the foot center,
+  // which buildPinPositions already places at the board-contact point).
+  const xKneePositions = useMemo(
+    () =>
+      xSidePins.map((p): [number, number, number] => {
+        const side = p.side === "+x" ? 1 : -1;
+        return [side * (sizeX / 2 + PIN_DEPTH / 2), pinHeight / 2, p.position[2]];
+      }),
+    [xSidePins, sizeX, pinHeight],
   );
-  const zSidePins = useMemo(
-    () => pins.filter((p) => p.side === "+z" || p.side === "-z").map((p) => p.position),
-    [pins],
+  const zKneePositions = useMemo(
+    () =>
+      zSidePins.map((p): [number, number, number] => {
+        const side = p.side === "+z" ? 1 : -1;
+        return [p.position[0], pinHeight / 2, side * (sizeZ / 2 + PIN_DEPTH / 2)];
+      }),
+    [zSidePins, sizeZ, pinHeight],
   );
+  const xFootPositions = useMemo(() => xSidePins.map((p) => p.position), [xSidePins]);
+  const zFootPositions = useMemo(() => zSidePins.map((p) => p.position), [zSidePins]);
   const labelTexture = useMemo(
     () => createLabelTexture(chipDef.label, sizeX / sizeZ),
     [chipDef.label, sizeX, sizeZ],
@@ -100,17 +115,36 @@ export default function Chip({ chipDef, silkscreenTexture }: ChipProps) {
         <meshStandardMaterial color="#9a9a92" roughness={0.6} />
       </mesh>
 
-      <Instances limit={xSidePins.length} castShadow={false}>
-        <boxGeometry args={[PIN_WIDTH, pinHeight, PIN_DEPTH]} />
+      {/* +X/-X faces: PIN_DEPTH (outward) must be on the X axis, PIN_WIDTH
+          (along-edge) on Z -- the two were swapped before, which merged
+          every pin on an edge into one solid overlapping bar. */}
+      <Instances limit={xKneePositions.length} castShadow={false}>
+        <boxGeometry args={[PIN_DEPTH, pinHeight, PIN_WIDTH]} />
         <meshStandardMaterial color={PIN_COLOR} roughness={0.22} metalness={0.85} />
-        {xSidePins.map((p, i) => (
+        {xKneePositions.map((p, i) => (
           <Instance key={i} position={p} />
         ))}
       </Instances>
-      <Instances limit={zSidePins.length} castShadow={false}>
-        <boxGeometry args={[PIN_DEPTH, pinHeight, PIN_WIDTH]} />
+      <Instances limit={xFootPositions.length} castShadow={false}>
+        <boxGeometry args={[PIN_FOOT_LENGTH, PIN_FOOT_HEIGHT, PIN_WIDTH]} />
         <meshStandardMaterial color={PIN_COLOR} roughness={0.22} metalness={0.85} />
-        {zSidePins.map((p, i) => (
+        {xFootPositions.map((p, i) => (
+          <Instance key={i} position={p} />
+        ))}
+      </Instances>
+
+      {/* +Z/-Z faces: PIN_WIDTH on X, PIN_DEPTH (outward) on Z. */}
+      <Instances limit={zKneePositions.length} castShadow={false}>
+        <boxGeometry args={[PIN_WIDTH, pinHeight, PIN_DEPTH]} />
+        <meshStandardMaterial color={PIN_COLOR} roughness={0.22} metalness={0.85} />
+        {zKneePositions.map((p, i) => (
+          <Instance key={i} position={p} />
+        ))}
+      </Instances>
+      <Instances limit={zFootPositions.length} castShadow={false}>
+        <boxGeometry args={[PIN_WIDTH, PIN_FOOT_HEIGHT, PIN_FOOT_LENGTH]} />
+        <meshStandardMaterial color={PIN_COLOR} roughness={0.22} metalness={0.85} />
+        {zFootPositions.map((p, i) => (
           <Instance key={i} position={p} />
         ))}
       </Instances>

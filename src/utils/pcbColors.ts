@@ -12,7 +12,7 @@ export const PCB_COLORS = {
   padBorder: "#a07010",
   drillHole: "#0d1f13",
   leadTin: "#9a9a8a", // IC leads -- tin-plated, not gold
-  silkscreen: "#d8d8c0",
+  silkscreen: "#b8b8a0", // muted/slightly yellowed -- not bright white
   pulseCore: "#ffe066",
   pulseTip: "#ffffff",
 } as const;

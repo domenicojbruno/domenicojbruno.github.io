@@ -8,14 +8,15 @@ import { PCB_COLORS } from "@/utils/pcbColors";
 const BOARD_WIDTH = 42;
 const BOARD_DEPTH = 40;
 const BOARD_THICKNESS = 0.4;
-const TEXTURE_WIDTH = 2048;
+const TEXTURE_WIDTH = 4096;
 const MARGIN_PX = TEXTURE_WIDTH * 0.025;
 
 // One width for every trace on the board, canvas/decorative and 3D/navigable
 // alike -- the click-triggered electricity pulse is the only thing that's
-// ever allowed to make a path look different from any other.
-const TRACE_WIDTH_PX = 2;
-const ISOLATION_WIDTH_PX = 1.5;
+// ever allowed to make a path look different from any other. The isolation
+// channel is a thin accent border, not a dominant groove -- 1px each side.
+const TRACE_WIDTH_PX = 4;
+const ISOLATION_WIDTH_PX = 1;
 
 function toPixel(x: number, z: number, canvas: HTMLCanvasElement): [number, number] {
   return [(x / BOARD_WIDTH + 0.5) * canvas.width, (z / BOARD_DEPTH + 0.5) * canvas.height];
@@ -41,7 +42,7 @@ function drawBoardBase(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement)
 }
 
 function drawFiberglassGrain(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, rng: () => number) {
-  for (let i = 0; i < 16000; i++) {
+  for (let i = 0; i < 64000; i++) {
     const x = rng() * canvas.width;
     const y = rng() * canvas.height;
     const a = rng() * 0.04;
@@ -129,9 +130,14 @@ function drawComponentPads(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElem
   }
 }
 
+// Accent-scale, not a focal point -- absolute canvas pixels at this file's
+// TEXTURE_WIDTH, not resolution-relative.
+const VIA_OUTER_R_PX = 5;
+const VIA_INNER_R_PX = 2;
+
 function drawVias(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-  const outerR = canvas.width * 0.0035;
-  const innerR = outerR * 0.4;
+  const outerR = VIA_OUTER_R_PX;
+  const innerR = VIA_INNER_R_PX;
   for (const [x, z] of BOARD_LAYOUT.vias) {
     const [px, py] = toPixel(x, z, canvas);
     ctx.beginPath();
@@ -153,9 +159,12 @@ function drawVias(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
 // (nothing here is placed independently of an actual component/via), and
 // drawn last so the silkscreen sits visibly on top of every other layer.
 function drawSilkscreen(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  // Silkscreen ink isn't fully opaque, and shouldn't compete with the board
+  // at a glance -- present, but secondary.
+  ctx.globalAlpha = 0.65;
   ctx.strokeStyle = PCB_COLORS.silkscreen;
   ctx.fillStyle = PCB_COLORS.silkscreen;
-  ctx.font = `${Math.round(canvas.width * 0.0075)}px 'JetBrains Mono', 'Share Tech Mono', ui-monospace, monospace`;
+  ctx.font = "13px 'JetBrains Mono', 'Share Tech Mono', ui-monospace, monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
@@ -176,7 +185,7 @@ function drawSilkscreen(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement
       return toPixel(comp.center[0] + ox, comp.center[1] + oz, canvas);
     });
 
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 0.8;
     ctx.beginPath();
     corners.forEach(([px, py], i) => {
       if (i === 0) ctx.moveTo(px, py);
@@ -217,7 +226,7 @@ function drawSilkscreen(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement
   ];
   const r = canvas.width * 0.006;
   const tick = canvas.width * 0.01;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.0;
   for (const [x, z] of fiducialSpots) {
     const [px, py] = toPixel(x, z, canvas);
     ctx.beginPath();
@@ -230,6 +239,8 @@ function drawSilkscreen(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement
     ctx.lineTo(px, py + tick);
     ctx.stroke();
   }
+
+  ctx.globalAlpha = 1.0;
 }
 
 function createBoardTexture(): THREE.CanvasTexture {

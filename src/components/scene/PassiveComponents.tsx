@@ -1,31 +1,40 @@
 import { useMemo } from "react";
-import * as THREE from "three";
 import { Instances, Instance } from "@react-three/drei";
-import { BOARD_LAYOUT } from "@/data/boardLayout";
+import { BOARD_LAYOUT, type ComponentPlacement } from "@/data/boardLayout";
 
-// Real SMD passives at this scale read as a dark ceramic body with two
-// metallic end-caps -- baked as a small left-cap/body/right-cap strip and
-// applied via `map`. BoxGeometry gives every face its own independent 0-1
-// UV square, so this paints the same band pattern on top (the dominant
-// visible face) and a compressed (but still plausible) version on the sides.
-function createSmdSkin(bodyColor: string, capColor: string, capFraction: number): THREE.CanvasTexture {
-  const width = 128;
-  const height = 64;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d")!;
-  const capWidth = width * capFraction;
+const BODY_COLOR = "#3a3530";
+const CAP_COLOR = "#9a9a8a";
 
-  ctx.fillStyle = bodyColor;
-  ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = capColor;
-  ctx.fillRect(0, 0, capWidth, height);
-  ctx.fillRect(width - capWidth, 0, capWidth, height);
+const RESISTOR_BODY: [number, number, number] = [0.28, 0.1, 0.16];
+const RESISTOR_CAP: [number, number, number] = [0.06, 0.11, 0.17];
+const RESISTOR_CAP_OFFSET = 0.14; // body half-length -- caps sit flush at the ends
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
+const CAPACITOR_BODY: [number, number, number] = [0.32, 0.14, 0.2];
+const CAPACITOR_CAP: [number, number, number] = [0.07, 0.15, 0.21];
+const CAPACITOR_CAP_OFFSET = 0.16;
+
+// Same rotation convention as PCBBoard.tsx's silkscreen outlines: rotates a
+// local (length-axis, width-axis) offset by the component's rotation.y angle.
+function rotateLocal(lx: number, lz: number, angle: number): [number, number] {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return [lx * c + lz * s, -lx * s + lz * c];
+}
+
+function capPositions(
+  components: ComponentPlacement[],
+  offset: number,
+  y: number,
+): { a: [number, number, number][]; b: [number, number, number][] } {
+  const a: [number, number, number][] = [];
+  const b: [number, number, number][] = [];
+  for (const comp of components) {
+    const [ox, oz] = rotateLocal(-offset, 0, comp.angle);
+    const [bx, bz] = rotateLocal(offset, 0, comp.angle);
+    a.push([comp.center[0] + ox, y, comp.center[1] + oz]);
+    b.push([comp.center[0] + bx, y, comp.center[1] + bz]);
+  }
+  return { a, b };
 }
 
 export default function PassiveComponents() {
@@ -36,24 +45,55 @@ export default function PassiveComponents() {
     };
   }, []);
 
-  const resistorSkin = useMemo(() => createSmdSkin("#262420", "#cfd0d2", 0.22), []);
-  const capacitorSkin = useMemo(() => createSmdSkin("#1c1f24", "#cfd0d2", 0.3), []);
+  const resistorY = RESISTOR_BODY[1] / 2;
+  const capacitorY = CAPACITOR_BODY[1] / 2;
+  const resistorCaps = useMemo(
+    () => capPositions(resistors, RESISTOR_CAP_OFFSET, resistorY),
+    [resistors, resistorY],
+  );
+  const capacitorCaps = useMemo(
+    () => capPositions(capacitors, CAPACITOR_CAP_OFFSET, capacitorY),
+    [capacitors, capacitorY],
+  );
 
   return (
     <group>
+      {/* Resistors -- uniform matte ceramic body, two metallic end caps. No
+          stripes, no texture, no markings at this scale. */}
       <Instances limit={resistors.length} castShadow={false}>
-        <boxGeometry args={[0.45, 0.12, 0.22]} />
-        <meshStandardMaterial map={resistorSkin} roughness={0.45} metalness={0.3} />
+        <boxGeometry args={RESISTOR_BODY} />
+        <meshStandardMaterial color={BODY_COLOR} roughness={0.82} metalness={0} />
         {resistors.map((comp, i) => (
-          <Instance key={i} position={[comp.center[0], 0.06, comp.center[1]]} rotation={[0, comp.angle, 0]} />
+          <Instance key={i} position={[comp.center[0], resistorY, comp.center[1]]} rotation={[0, comp.angle, 0]} />
+        ))}
+      </Instances>
+      <Instances limit={resistorCaps.a.length * 2} castShadow={false}>
+        <boxGeometry args={RESISTOR_CAP} />
+        <meshStandardMaterial color={CAP_COLOR} roughness={0.28} metalness={0.75} />
+        {resistorCaps.a.map((p, i) => (
+          <Instance key={`a${i}`} position={p} rotation={[0, resistors[i].angle, 0]} />
+        ))}
+        {resistorCaps.b.map((p, i) => (
+          <Instance key={`b${i}`} position={p} rotation={[0, resistors[i].angle, 0]} />
         ))}
       </Instances>
 
+      {/* Capacitors -- same body+cap treatment, larger. */}
       <Instances limit={capacitors.length} castShadow={false}>
-        <boxGeometry args={[0.3, 0.16, 0.24]} />
-        <meshStandardMaterial map={capacitorSkin} roughness={0.4} metalness={0.3} />
+        <boxGeometry args={CAPACITOR_BODY} />
+        <meshStandardMaterial color={BODY_COLOR} roughness={0.82} metalness={0} />
         {capacitors.map((comp, i) => (
-          <Instance key={i} position={[comp.center[0], 0.08, comp.center[1]]} rotation={[0, comp.angle, 0]} />
+          <Instance key={i} position={[comp.center[0], capacitorY, comp.center[1]]} rotation={[0, comp.angle, 0]} />
+        ))}
+      </Instances>
+      <Instances limit={capacitorCaps.a.length * 2} castShadow={false}>
+        <boxGeometry args={CAPACITOR_CAP} />
+        <meshStandardMaterial color={CAP_COLOR} roughness={0.28} metalness={0.75} />
+        {capacitorCaps.a.map((p, i) => (
+          <Instance key={`a${i}`} position={p} rotation={[0, capacitors[i].angle, 0]} />
+        ))}
+        {capacitorCaps.b.map((p, i) => (
+          <Instance key={`b${i}`} position={p} rotation={[0, capacitors[i].angle, 0]} />
         ))}
       </Instances>
 

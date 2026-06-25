@@ -1,5 +1,5 @@
 import { CHIPS, type ChipDef } from "@/data/chips";
-import { buildPinPositions, PIN_WIDTH, PIN_DEPTH } from "@/utils/pinLayout";
+import { buildPinPositions, PIN_WIDTH, PIN_FOOT_LENGTH } from "@/utils/pinLayout";
 import { distanceToSegment, isFarFromChips, isFarFromTraces, mulberry32 } from "@/utils/exclusionZones";
 
 // Mirrors PCBBoard.tsx's BOARD_WIDTH/BOARD_DEPTH. Not imported directly to
@@ -77,14 +77,15 @@ function normalForSide(side: "+x" | "-x" | "+z" | "-z"): [number, number] {
 function pinPadsForChip(chip: ChipDef): PinPad[] {
   const [sizeX, , sizeZ] = chip.size;
   const [cx, , cz] = chip.position;
-  const pins = buildPinPositions(sizeX, sizeZ, 1);
+  const pins = buildPinPositions(sizeX, sizeZ);
   return pins.map((pin) => {
+    // Pad matches the foot's footprint, not the whole knee+foot lead length.
     const onXFace = pin.side === "+x" || pin.side === "-x";
     return {
       x: cx + pin.position[0],
       z: cz + pin.position[2],
-      sizeX: onXFace ? PIN_WIDTH * 1.6 : PIN_DEPTH * 1.15,
-      sizeZ: onXFace ? PIN_DEPTH * 1.15 : PIN_WIDTH * 1.6,
+      sizeX: onXFace ? PIN_FOOT_LENGTH * 1.15 : PIN_WIDTH * 1.6,
+      sizeZ: onXFace ? PIN_WIDTH * 1.6 : PIN_FOOT_LENGTH * 1.15,
     };
   });
 }
@@ -111,7 +112,7 @@ function isFarFromPlacedSegments(x: number, z: number, margin: number, placed: S
 function randomPinAnchor(rng: () => number): PinAnchor {
   const chip = CHIPS[Math.floor(rng() * CHIPS.length)];
   const [sizeX, , sizeZ] = chip.size;
-  const pins = buildPinPositions(sizeX, sizeZ, 1);
+  const pins = buildPinPositions(sizeX, sizeZ);
   const pin = pins[Math.floor(rng() * pins.length)];
   const [cx, , cz] = chip.position;
   return {

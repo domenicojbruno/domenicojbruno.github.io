@@ -13,8 +13,8 @@ export default function SceneLights() {
     const light = activeLightRef.current;
     if (!light) return;
     const chip = getChip(currentChip);
-    light.position.set(chip.position[0], chip.position[1] + 3, chip.position[2]);
-    const targetIntensity = transitioning ? 0 : 0.7;
+    light.position.set(chip.position[0], chip.position[1] + 1.5, chip.position[2]);
+    const targetIntensity = transitioning ? 0 : 0.3;
     light.intensity = THREE.MathUtils.damp(light.intensity, targetIntensity, 4, delta);
   });
 
@@ -31,7 +31,7 @@ export default function SceneLights() {
         ref={activeLightRef}
         color="#ffd27a"
         intensity={0}
-        distance={7}
+        distance={5}
         decay={2.4}
         castShadow={false}
       />
