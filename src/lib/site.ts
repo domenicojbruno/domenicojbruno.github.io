@@ -17,6 +17,7 @@ export const me = {
   gpa: '3.66 / 4.0',
   resume: '/domenico-bruno-resume.pdf',
   linkedin: 'https://www.linkedin.com/in/domenico-j-bruno/',
+  github: 'https://github.com/domenicojbruno',
 };
 
 export type SectionId =

@@ -47,7 +47,9 @@ async function schematics() {
 
 // ------------------------------------------------------------------ personal
 const PHOTOS = [
-  ['Pets and Family/Dog1.JPEG', 'dog.jpg', 1400],
+  // Pizzelle is the white one with the brown eye patches; Cannoli is apricot.
+  ['Pets and Family/Dog1.JPEG', 'pizzelle.jpg', 1400],
+  ['Pets and Family/Img1.JPG', 'cannoli.jpg', 1400],
   ['Side Hobbies/Img3.jpg', 'workbench.jpg', 2000],
   ['Side Hobbies/DCI Championship.jpg', 'drum-corps.jpg', 1600],
   ['Side Hobbies/LegoKanto_2.png', 'lego-kanto.jpg', 800],

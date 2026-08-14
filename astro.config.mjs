@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  // TODO(polish): point this at the real domain before launch — it is what
-  // canonical links and the og:image URL are built from.
-  site: 'https://domenicobruno.vercel.app',
+  // User GitHub Pages site, so it is served from the domain root and needs no
+  // `base`. Drives canonical links and the absolute og:image URL.
+  site: 'https://domenicojbruno.github.io',
 });

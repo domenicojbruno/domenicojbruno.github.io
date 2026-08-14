@@ -1,7 +1,12 @@
-# domenicobruno.dev — portfolio
+# domenicojbruno.github.io
 
-Astro static site. No React, no CSS framework, no animation library — total
-runtime JavaScript is about **7 KB** across the whole site, hand-written.
+Personal engineering portfolio. Astro static site — no React, no CSS framework,
+no animation library. Total runtime JavaScript is about **7 KB** across the whole
+site, hand-written.
+
+Deploys to GitHub Pages on every push to `main`
+(`.github/workflows/deploy.yml`). Pages source must be set to **GitHub Actions**
+in repo settings, not "deploy from a branch".
 
 ```bash
 npm install
@@ -62,8 +67,7 @@ third-party figures pulled from papers in the event-camera folder.
 
 ## Before launch
 
-- [x] LinkedIn → `src/lib/site.ts`. No GitHub account exists, so there is no
-      GitHub link anywhere; add one to `site.ts` and `Contact.astro` if that changes.
+- [x] LinkedIn and GitHub → `src/lib/site.ts`
 - [ ] Headshot → save it as `headshot.jpg` in the raw `Portfolio Website` folder,
       then `npm run assets` picks it up automatically. Wire into `About.astro`.
 - [ ] Real domain → `site` in `astro.config.mjs` (drives canonical + `og:image`)
