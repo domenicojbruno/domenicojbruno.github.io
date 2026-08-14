@@ -1,0 +1,35 @@
+---
+import Section from './Section.astro';
+import FilterSim from './FilterSim.astro';
+---
+
+<Section id="playground" title="The filter, live.">
+  <p class="lede reveal">
+    Both of these are blocks I designed for clEAR-ExG, running in your browser
+    off their closed-form response. Drag the bias current until the corner lands
+    on the dashed line and you have re-derived the number on my resume.
+  </p>
+
+  <div class="reveal"><FilterSim /></div>
+
+  <p class="foot reveal">
+    Subthreshold model: <code>g<sub>m</sub> = I<sub>D</sub> / nV<sub>T</sub></code>
+    with n = 1.5 and V<sub>T</sub> = 25.85 mV. M is the g<sub>m</sub>-division
+    ratio real nanopower OTA-C filters use to reach audio-band corners on
+    picofarad capacitors. Plots are the exact 2nd-order response; the demo trace
+    is filtered by the matching digital biquad.
+    <a href="/work/clear-exg">Read how it was actually built →</a>
+  </p>
+</Section>
+
+<style>
+  .lede { margin-bottom: 2.5rem; }
+  .foot {
+    margin-top: 1.5rem;
+    font-size: 0.82rem;
+    color: var(--fg-3);
+    max-width: 68ch;
+  }
+  .foot code { font-family: var(--mono); color: var(--fg-2); }
+  .foot a { color: var(--accent); border-bottom: 1px solid currentColor; }
+</style>

@@ -1,0 +1,105 @@
+---
+import Section from './Section.astro';
+import { me } from '../lib/site';
+
+// TODO(polish): swap in a real headshot at src/assets/personal/headshot.jpg.
+// Until then the panel shows the operating-point card instead of a photo.
+const facts = [
+  ['Degree', me.degree],
+  ['School', `${me.school}, ${me.grad}`],
+  ['GPA', me.gpa],
+  ['Clearance', 'Active DoD Secret'],
+  ['Based', me.location],
+];
+---
+
+<Section id="operating" title="Where I sit on the curve.">
+  <div class="about">
+    <div class="about__text">
+      <p class="reveal lede">
+        I design the analog piece — the few hundred microwatts that stand between
+        a sensor and everything digital downstream.
+      </p>
+
+      <p class="reveal muted">
+        My focus is biopotential acquisition: EEG and ECG front-ends built in
+        180 nm CMOS, running deep in subthreshold where a transistor's
+        transconductance is set by a bias current measured in nanoamperes. It is
+        an unforgiving place to work. Gain, noise, offset and power all pull
+        against each other, the models are least trustworthy exactly where you
+        are operating, and nothing is fixable in software afterwards.
+      </p>
+
+      <p class="reveal muted">
+        I care about it because of what it enables. Seizure monitoring still
+        largely means a hospital visit and a cap of wet electrodes. Getting the
+        same signal quality out of something you can wear all day is not a
+        software problem — it is a circuit that has to be quiet, small and
+        nearly free to run. That constraint is the interesting part.
+      </p>
+
+      <p class="reveal muted">
+        Right now I am a research assistant in WPI's Integrated Circuits and
+        Systems Lab working on wearable and physiological sensing, and a teaching
+        assistant for Microelectronics I. I co-founded WPI's chapter of the IEEE
+        Solid-State Circuits Society because there was no room on campus where
+        people talked about this work, and now there is.
+      </p>
+
+      <p class="reveal muted">
+        Last summer I was at MIT Lincoln Laboratory building RF test hardware —
+        schematics, boards, chassis, and a lot of time on a spectrum analyser
+        finding out how the thing I designed actually behaves. That gap, between
+        the simulation and the bench, is the part of engineering I want more of.
+      </p>
+    </div>
+
+    <aside class="about__card reveal">
+      <p class="stat__k">Operating point</p>
+      <dl>
+        {facts.map(([k, v]) => (
+          <div><dt>{k}</dt><dd>{v}</dd></div>
+        ))}
+      </dl>
+      <a class="btn" href={me.resume} download>Download CV</a>
+    </aside>
+  </div>
+</Section>
+
+<style>
+  .about {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: 3rem;
+    align-items: start;
+  }
+  @media (max-width: 880px) { .about { grid-template-columns: 1fr; gap: 2.5rem; } }
+
+  .about__text { display: grid; gap: 1.1rem; max-width: 60ch; }
+  .about__text .lede { margin-bottom: 0.5rem; color: var(--fg); }
+
+  .about__card {
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--accent);
+    border-radius: 4px;
+    background: var(--bg-2);
+    padding: 1.5rem;
+    display: grid;
+    gap: 1.25rem;
+    position: sticky;
+    top: 5rem;
+  }
+  @media (max-width: 880px) { .about__card { position: static; } }
+
+  .about__card dl { display: grid; gap: 0.85rem; margin: 0; }
+  .about__card dl > div { display: grid; gap: 0.15rem; }
+  .about__card dt {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+  .about__card dd { margin: 0; font-size: 0.92rem; }
+  .about__card .btn { justify-content: center; }
+</style>

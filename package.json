@@ -1,0 +1,25 @@
+{
+  "name": "domenico-bruno-portfolio",
+  "type": "module",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check --minimumSeverity error && npm run check:math",
+    "check:math": "node --experimental-strip-types src/lib/filter-math.ts",
+    "assets": "node scripts/prep-assets.mjs",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "astro": "^7.2.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3"
+  }
+}

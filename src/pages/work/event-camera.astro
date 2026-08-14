@@ -1,0 +1,106 @@
+---
+import CaseLayout from '../../layouts/CaseLayout.astro';
+
+const sims = [
+  {
+    src: '/clips/missile-dualpixel.webp',
+    title: 'Dual-pixel phase detect',
+    note: 'The aperture is split in half and each half imaged separately. Blue and red diverge when the image is out of focus and fuse to purple at zero disparity — the same trick a modern camera uses, running on events instead of frames.',
+  },
+  {
+    src: '/clips/artemis-reentry.webp',
+    title: 'Thermal reentry',
+    note: 'An Orion-class capsule on a reentry pass, viewed as thermal events. Extreme dynamic range is where event sensors are least replaceable: nothing in the scene clips, because nothing is integrated over an exposure.',
+  },
+  {
+    src: '/clips/crowd-monitor.webp',
+    title: 'Crowd monitoring',
+    note: 'Only motion produces events, so no face is ever reconstructed — the sensor is privacy-preserving by construction rather than by policy. Region-of-interest focus lock plus a density heatmap.',
+  },
+  {
+    src: '/clips/event-sim-helix.webp',
+    title: 'What an event stream is',
+    note: 'The explainer: a rotating scene unrolled into the x–y–t volume, where each point is one pixel reporting one brightness change. There are no frames anywhere in this representation.',
+  },
+];
+---
+
+<CaseLayout slug="event-camera">
+  <section>
+    <h2>Frames are the wrong primitive</h2>
+    <p class="muted">
+      A conventional sensor integrates light over an exposure and hands you a
+      whole frame. For anything fast, that exposure is a smear — and autofocus,
+      which works by hunting for maximum contrast, has nothing sharp to hunt for.
+      Raise the frame rate and you buy shorter exposures at the cost of light,
+      bandwidth and power, all at once.
+    </p>
+    <p class="muted">
+      A dynamic-vision sensor throws the frame away. Each pixel fires
+      independently the moment its log-brightness changes by a threshold, with
+      microsecond latency and no global clock. What comes out is a sparse stream
+      of events — and crucially, the <em>rate</em> of that stream is itself a
+      focus signal. Sharp edges generate dense events; a blurred image generates
+      few. You can close the focus loop on the data the sensor is already
+      producing.
+    </p>
+  </section>
+
+  <section>
+    <h2>Same target, two sensors</h2>
+    <div class="ab">
+      <figure>
+        <img src="/clips/missile-framecamera.webp" alt="Simulated 120 fps frame camera view of a fast-moving target, motion-blurred across each exposure" width="900" height="506" loading="lazy" decoding="async" />
+        <figcaption><strong>120 fps frame camera.</strong> Motion blur across every exposure. Contrast-detect autofocus has nothing to lock onto.</figcaption>
+      </figure>
+      <figure>
+        <img src="/clips/missile-autofocus.webp" alt="Simulated event-camera view of the same target, showing ON and OFF polarity events and a focus lock" width="900" height="506" loading="lazy" decoding="async" />
+        <figcaption><strong>Event sensor.</strong> ON/OFF polarity events, defocused at first, then a focus snap and a tracking lock — driven by event rate.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>The rest of the models</h2>
+    <div class="grid">
+      {sims.map((s) => (
+        <figure class="sim">
+          <img src={s.src} alt={s.title} width="900" height="506" loading="lazy" decoding="async" />
+          <figcaption>
+            <strong>{s.title}</strong>
+            <span>{s.note}</span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <h2>How it was built</h2>
+    <p class="muted">
+      Seven Python simulations, each self-contained: a scene generator, a DVS
+      pixel model that thresholds log-intensity change per pixel per timestep, an
+      optical model that applies a defocus kernel, and a controller that walks the
+      focus position to maximise event rate. Each script renders its own animation
+      so the comparison is the output, not a plot of the output.
+    </p>
+    <p class="muted">
+      Presented at Lincoln Laboratory's "Intern vs. Sharks" pitch competition in
+      summer 2026, with Ishan Renjen and Peter Kaya Gretchikha.
+    </p>
+  </section>
+</CaseLayout>
+
+<style>
+  h2 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin-bottom: 1rem; }
+  em { color: var(--fg); font-style: normal; }
+
+  figure { margin: 0; }
+  img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-2); }
+  figcaption { color: var(--fg-2); font-size: 0.88rem; margin-top: 0.7rem; }
+  figcaption strong { color: var(--fg); }
+
+  .ab { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1.5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 2rem 1.5rem; }
+  .sim figcaption { display: grid; gap: 0.35rem; }
+</style>

@@ -1,0 +1,168 @@
+---
+import { me, ticker } from '../lib/site';
+
+const chips = [
+  `${me.school.split(' ').map((w) => w[0]).join('')} · BS/MS ECE · ${me.grad}`,
+  'Active DoD Secret Clearance',
+  'Seeking analog / mixed-signal internship',
+];
+---
+
+<section id="bias" data-theme="bias" class="hero">
+  <canvas class="hero__scope" data-scope aria-hidden="true"></canvas>
+
+  <div class="hero__inner">
+    <p class="eyebrow reveal">01 — Bias Point</p>
+
+    <h1 class="hero__name reveal">
+      <span>{me.first}</span><span class="hero__last">{me.last}</span>
+    </h1>
+
+    <p class="hero__tag reveal">
+      Analog IC design for <em>low-power biopotential sensing</em>. Subthreshold
+      OTAs, OTA-C filters and nanoampere references in 180&nbsp;nm CMOS — circuits
+      that pull microvolt signals off the human body without draining the battery.
+    </p>
+
+    <div class="hero__chips reveal">
+      {chips.map((c) => <span class="chip"><i class="chip__dot"></i>{c}</span>)}
+    </div>
+
+    <div class="hero__cta reveal">
+      <a class="btn btn--primary" href="#chain">See the signal chain</a>
+      <a class="btn" href="#playground">Run a filter →</a>
+    </div>
+  </div>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker__row">
+      {[0, 1].map(() => (
+        <span class="ticker__grp">
+          {ticker.map((t) => <span class="ticker__item">{t}</span>)}
+        </span>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  import { mountCanvas, cssVar } from '../lib/canvas';
+
+  const el = document.querySelector<HTMLCanvasElement>('[data-scope]');
+  if (el) {
+    // A slow scope sweep: two detuned sinusoids plus a little noise, drawn on a
+    // faint graticule. Cheap enough to run at 60fps on a phone.
+    mountCanvas(el, (ctx, w, h, t) => {
+      const accent = cssVar(el, '--accent');
+      const line = cssVar(el, '--line');
+      const mid = h / 2;
+
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      const step = 64;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+      for (let y = mid % step; y <= h; y += step) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+      ctx.stroke();
+
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      const amp = Math.min(h * 0.17, 90);
+      for (let x = 0; x <= w; x += 2) {
+        const p = x / w;
+        const y =
+          mid +
+          Math.sin(p * 7.5 + t * 0.55) * amp +
+          Math.sin(p * 23 - t * 0.9) * amp * 0.22 +
+          Math.sin(p * 61 + t * 2.1) * amp * 0.05;
+        x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+  }
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 7rem var(--pad) 0;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  @media (min-width: 1100px) {
+    .hero { padding-left: calc(var(--rail) + var(--pad)); }
+  }
+
+  .hero__scope {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+    /* fades the trace out behind the type so the name stays legible */
+    mask-image: radial-gradient(120% 85% at 50% 42%, transparent 22%, #000 78%);
+  }
+
+  .hero__inner { position: relative; max-width: var(--max); margin-inline: auto; width: 100%; }
+
+  .hero__name {
+    display: flex;
+    flex-direction: column;
+    text-transform: uppercase;
+    margin-bottom: 1.75rem;
+  }
+  .hero__last {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--accent);
+    text-stroke: 1px var(--accent);
+    margin-left: 0.06em;
+  }
+
+  .hero__tag {
+    font-size: clamp(1rem, 1.5vw, 1.2rem);
+    color: var(--fg-2);
+    max-width: 48ch;
+    text-wrap: pretty;
+  }
+  .hero__tag em { color: var(--fg); font-style: normal; }
+
+  .hero__chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 2rem; }
+  .hero__cta { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.25rem; }
+
+  /* ------------------------------------------------------------- ticker */
+  .ticker {
+    position: relative;
+    margin: auto calc(var(--pad) * -1) 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    padding: 0.7rem 0;
+    background: var(--bg-2);
+  }
+  @media (min-width: 1100px) { .ticker { margin-left: calc((var(--rail) + var(--pad)) * -1); } }
+
+  .ticker__row { display: flex; width: max-content; animation: marquee 42s linear infinite; }
+  .ticker__grp { display: flex; }
+  .ticker__item {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    padding-inline: 1.6rem;
+    white-space: nowrap;
+  }
+  .ticker__item::after { content: '·'; margin-left: 1.6rem; color: var(--accent); }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  .ticker:hover .ticker__row { animation-play-state: paused; }
+</style>

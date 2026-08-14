@@ -1,0 +1,15 @@
+---
+import { sections, type SectionId } from '../lib/site';
+
+interface Props { id: SectionId; title?: string; class?: string }
+const { id, title, class: cls = '' } = Astro.props;
+const meta = sections.find((s) => s.id === id)!;
+---
+
+<section id={id} data-theme={id} class:list={['section', cls]}>
+  <div class="section__inner">
+    <p class="eyebrow reveal">{meta.n} — {meta.label}</p>
+    {title && <h2 class="reveal">{title}</h2>}
+    <slot />
+  </div>
+</section>

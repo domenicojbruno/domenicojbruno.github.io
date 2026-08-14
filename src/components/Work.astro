@@ -1,0 +1,145 @@
+---
+import Section from './Section.astro';
+import { projects, smallBuilds } from '../lib/projects';
+---
+
+<Section id="chain" title="Three things I built, and what they measured.">
+  <p class="lede reveal">
+    Every number below came off a simulation, not a datasheet. Where a target
+    was missed, the case study says so.
+  </p>
+
+  <ol class="work">
+    {projects.map((p) => (
+      <li class="reveal">
+        <a class="work__row" href={`/work/${p.slug}`}>
+          <span class="work__n mono">{p.n}</span>
+
+          <div class="work__body">
+            <h3>{p.title}</h3>
+            <p class="work__short">{p.short}</p>
+            <p class="work__meta mono">{p.where} · {p.when}</p>
+            <ul class="work__tags">
+              {p.stack.map((s) => <li class="mono">{s}</li>)}
+            </ul>
+          </div>
+
+          <dl class="work__stats">
+            {p.stats.slice(0, 3).map((s) => (
+              <div>
+                <dt class="stat__k">{s.k}</dt>
+                <dd class="stat__v">{s.v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <span class="work__go mono" aria-hidden="true">Case study →</span>
+        </a>
+      </li>
+    ))}
+  </ol>
+
+  <h3 class="small__head reveal">Smaller builds</h3>
+  <ul class="small reveal">
+    {smallBuilds.map((b) => (
+      <li>
+        <div class="small__top">
+          <strong>{b.title}</strong>
+          <span class="mono muted">{b.tech} · {b.when}</span>
+        </div>
+        <p class="muted">{b.note}</p>
+      </li>
+    ))}
+  </ul>
+
+  <p class="note reveal">
+    <strong>MIT Lincoln Laboratory, Summer 2026.</strong> Schematics, PCBs and
+    mechanical chassis for RF test hardware — characterisation and troubleshooting
+    on spectrum analysers, oscilloscopes and signal generators, plus component
+    selection and BOMs. The work was CUI, so there is nothing here to show; happy
+    to talk about the parts that aren't.
+  </p>
+</Section>
+
+<style>
+  .lede { margin-bottom: 3.5rem; }
+
+  .work { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+  .work li { border-bottom: 1px solid var(--line); }
+
+  .work__row {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas: 'n body stats' '. go go';
+    gap: 0.5rem 2rem;
+    padding: 2.25rem 0;
+    align-items: start;
+    transition: background 0.25s;
+  }
+  .work__row:hover { background: var(--wash); }
+
+  .work__n { grid-area: n; color: var(--accent); font-size: 0.75rem; padding-top: 0.35rem; }
+  .work__body { grid-area: body; }
+  .work__stats { grid-area: stats; }
+  .work__go { grid-area: go; }
+
+  .work__short { color: var(--fg-2); margin-top: 0.4rem; }
+  .work__meta { color: var(--fg-3); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.9rem; }
+
+  .work__tags { list-style: none; padding: 0; margin: 0.9rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .work__tags li {
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .work__stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 0; }
+  .work__stats dd { margin: 0; }
+  .work__stats > div { border-top: 1px solid var(--line); padding-top: 0.7rem; }
+  .work__stats .stat__v { font-size: clamp(1rem, 1.6vw, 1.25rem); }
+  .work__stats .stat__k { margin: 0 0 0.35rem; }
+
+  .work__go {
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    margin-top: 1rem;
+    transition: color 0.2s, transform 0.2s;
+  }
+  .work__row:hover .work__go { color: var(--accent); transform: translateX(4px); }
+
+  @media (max-width: 780px) {
+    .work__row {
+      grid-template-columns: 2.25rem 1fr;
+      grid-template-areas: 'n body' '. stats' '. go';
+      gap: 1.25rem 1rem;
+    }
+    .work__stats { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
+  }
+
+  /* --------------------------------------------------------- small builds */
+  .small__head { margin: 4.5rem 0 1.5rem; color: var(--fg-2); }
+  .small { list-style: none; padding: 0; margin: 0; display: grid; gap: 1.5rem; }
+  .small li { border-left: 1px solid var(--line); padding-left: 1.25rem; }
+  .small li:hover { border-color: var(--accent); }
+  .small__top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.9rem; margin-bottom: 0.35rem; }
+  .small p { font-size: 0.94rem; max-width: 62ch; }
+
+  .note {
+    margin-top: 3.5rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--accent);
+    border-radius: 3px;
+    background: var(--bg-2);
+    color: var(--fg-2);
+    font-size: 0.94rem;
+    max-width: 62ch;
+  }
+  .note strong { color: var(--fg); }
+</style>

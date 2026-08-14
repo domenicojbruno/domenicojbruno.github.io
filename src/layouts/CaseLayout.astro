@@ -1,0 +1,111 @@
+---
+import Base from './Base.astro';
+import { projects } from '../lib/projects';
+import { me } from '../lib/site';
+
+interface Props { slug: string }
+const { slug } = Astro.props;
+
+const i = projects.findIndex((p) => p.slug === slug);
+const p = projects[i];
+const next = projects[(i + 1) % projects.length];
+---
+
+<Base
+  title={`${p.title} — ${me.name}`}
+  description={`${p.short}. ${p.where}, ${p.when}.`}
+  nav={false}
+>
+  <article data-theme="chain" class="case">
+    <header class="case__head">
+      <a class="case__back mono" href="/#chain">← All work</a>
+
+      <p class="eyebrow">{p.n} — Case study</p>
+      <h1 class="case__title">{p.title}</h1>
+      <p class="case__short">{p.short}</p>
+
+      <dl class="case__meta">
+        <div><dt class="stat__k">Where</dt><dd>{p.where}</dd></div>
+        <div><dt class="stat__k">When</dt><dd>{p.when}</dd></div>
+        <div><dt class="stat__k">My part</dt><dd>{p.role}</dd></div>
+        {p.team && (
+          <div><dt class="stat__k">With</dt><dd>{p.team.join(', ')}</dd></div>
+        )}
+      </dl>
+
+      <p class="case__blurb">{p.blurb}</p>
+
+      <dl class="stats case__stats">
+        {p.stats.map((s) => (
+          <div class="stat">
+            <dd class="stat__v">{s.v}</dd>
+            <dt class="stat__k">{s.k}</dt>
+          </div>
+        ))}
+      </dl>
+    </header>
+
+    <div class="case__body">
+      <slot />
+    </div>
+
+    <nav class="case__next">
+      <a class="card" href={`/work/${next.slug}`}>
+        <span class="stat__k">Next case study</span>
+        <strong>{next.title}</strong>
+        <span class="muted">{next.short}</span>
+      </a>
+      <a class="btn" href="/#chain">← Back to the signal chain</a>
+    </nav>
+  </article>
+</Base>
+
+<style>
+  .case { max-width: 60rem; margin-inline: auto; padding: 3rem var(--pad) 6rem; }
+
+  .case__back {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    margin-bottom: 3rem;
+  }
+  .case__back:hover { color: var(--accent); }
+
+  .case__title { font-size: clamp(2.5rem, 7vw, 4.75rem); margin-bottom: 1rem; }
+  .case__short { font-size: clamp(1.1rem, 1.8vw, 1.35rem); color: var(--fg-2); max-width: 40ch; }
+
+  .case__meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1.25rem 2rem;
+    margin: 3rem 0;
+    padding: 1.5rem 0;
+    border-block: 1px solid var(--line);
+  }
+  .case__meta dd { margin: 0.25rem 0 0; font-size: 0.94rem; }
+
+  .case__blurb { font-size: 1.1rem; max-width: 62ch; color: var(--fg-2); }
+  .case__blurb :global(strong) { color: var(--fg); }
+
+  .case__stats { margin: 3rem 0 4.5rem; }
+  .case__stats .stat { display: flex; flex-direction: column; }
+  .case__stats dd { margin: 0; order: -1; }
+
+  /* minmax(0,1fr), not 1fr: a grid item's automatic minimum is its content
+     width, so the min-width tables inside would otherwise widen the track past
+     the viewport instead of scrolling inside their own .tbl wrapper. */
+  .case__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3.5rem; }
+
+  .case__next {
+    display: grid;
+    gap: 1rem;
+    margin-top: 5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--line);
+    justify-items: start;
+  }
+  .case__next .card { display: grid; gap: 0.35rem; width: 100%; }
+  .case__next strong { font-size: 1.25rem; }
+</style>

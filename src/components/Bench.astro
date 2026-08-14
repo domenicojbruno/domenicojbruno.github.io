@@ -1,0 +1,71 @@
+---
+import { Image } from 'astro:assets';
+import drumCorps from '../assets/personal/drum-corps.jpg';
+import dog from '../assets/personal/dog.jpg';
+import legoKanto from '../assets/personal/lego-kanto.jpg';
+import legoDorm from '../assets/personal/lego-dorm.jpg';
+
+// Deliberately small. Family photos are excluded — they belong to people who
+// did not choose to be on a public website.
+const shots = [
+  { img: drumCorps, w: 2, alt: 'Drum Corps International championship performance', cap: 'Drum corps', note: 'Trumpet section leader with the Spartans, Nashua NH — two summers of national competition. Nothing has taught me more about hitting a spec under pressure.' },
+  { img: dog, w: 1, alt: 'My dog', cap: 'The dog', note: 'Unimpressed by phase margin.' },
+  { img: legoKanto, w: 1, alt: 'Lego build of the Kanto region', cap: 'Lego', note: 'Building things that only need to satisfy me.' },
+  { img: legoDorm, w: 1, alt: 'Lego build of a dorm room', cap: 'More Lego', note: 'The dorm room, in brick.' },
+];
+---
+
+<section id="bench" data-theme="bench" class="section bench">
+  <div class="section__inner">
+    <p class="eyebrow reveal">07 — Off the Bench</p>
+    <h2 class="reveal">The rest of it.</h2>
+    <p class="lede reveal">
+      Marching brass, plastic bricks, and a dog who does not care about noise
+      figures.
+    </p>
+
+    <div class="bench__grid">
+      {shots.map((s) => (
+        <figure class:list={['reveal', s.w === 2 && 'is-wide']}>
+          <Image src={s.img} alt={s.alt} widths={[400, 800, 1200]} sizes="(max-width: 700px) 100vw, 45vw" loading="lazy" />
+          <figcaption>
+            <strong>{s.cap}</strong>
+            <span>{s.note}</span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .bench { background: var(--bg); color: var(--fg); }
+  .bench .lede { color: var(--fg-2); margin-bottom: 3rem; }
+
+  .bench__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 2rem 1.5rem;
+  }
+  .bench__grid .is-wide { grid-column: span 2; }
+  @media (max-width: 700px) { .bench__grid .is-wide { grid-column: span 1; } }
+
+  figure { margin: 0; display: grid; gap: 0.85rem; }
+  figure :global(img) {
+    width: 100%;
+    height: 100%;
+    max-height: 26rem;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+  }
+  figcaption { display: grid; gap: 0.25rem; }
+  figcaption strong {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  figcaption span { color: var(--fg-2); font-size: 0.9rem; }
+</style>

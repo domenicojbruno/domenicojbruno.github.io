@@ -1,0 +1,180 @@
+---
+import { Image } from 'astro:assets';
+import { chain } from '../lib/projects';
+
+// ponytail: laid out with CSS grid + connector pseudo-elements rather than a
+// hand-positioned SVG. Buttons are keyboard-navigable for free and the chain
+// reflows on narrow screens instead of scaling into illegibility.
+const shots = import.meta.glob<{ default: ImageMetadata }>(
+  '../assets/schematics/*.png',
+  { eager: true }
+);
+const shot = (key?: string) =>
+  key ? shots[`../assets/schematics/${key}.png`]?.default : undefined;
+---
+
+<figure class="chain" data-chain>
+  <figcaption class="chain__cap">
+    <strong>The full front-end, in signal order.</strong>
+    Blocks marked <span class="chain__key"><i></i> mine</span> are the ones I
+    designed. Select any block for its schematic and measured numbers.
+  </figcaption>
+
+  <ol class="chain__row">
+    {chain.map((b, i) => (
+      <li>
+        <button
+          type="button"
+          class:list={['chain__block', b.mine && 'is-mine']}
+          data-block={i}
+          aria-expanded="false"
+          aria-controls="chain-detail"
+        >
+          <span class="chain__i mono">{String(i + 1).padStart(2, '0')}</span>
+          <span class="chain__name">{b.name}</span>
+          <span class="chain__spec mono">{b.spec}</span>
+        </button>
+      </li>
+    ))}
+  </ol>
+
+  <div class="chain__detail" id="chain-detail" aria-live="polite">
+    {chain.map((b, i) => {
+      const img = shot(b.img);
+      return (
+        <article class="chain__panel" data-panel={i} hidden>
+          <div class="chain__text">
+            <h4>{b.name} {b.mine && <span class="chain__mine mono">designed by me</span>}</h4>
+            <p class="mono chain__pspec">{b.spec}</p>
+            <p>{b.note}</p>
+          </div>
+          {img && (
+            <a class="chain__shot" href={img.src} target="_blank" rel="noopener">
+              <Image src={img} alt={`Cadence schematic of the ${b.name} block`} widths={[420, 840]} sizes="(max-width: 800px) 100vw, 420px" loading="lazy" />
+              <span class="mono">Cadence Virtuoso · open full size ↗</span>
+            </a>
+          )}
+        </article>
+      );
+    })}
+  </div>
+</figure>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-chain]');
+  if (root) {
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('[data-block]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
+
+    const show = (i: number) => {
+      const already = buttons[i].getAttribute('aria-expanded') === 'true';
+      buttons.forEach((b, n) => b.setAttribute('aria-expanded', String(!already && n === i)));
+      panels.forEach((p, n) => (p.hidden = already || n !== i));
+    };
+
+    buttons.forEach((b, i) => b.addEventListener('click', () => show(i)));
+    show(4); // opens on the 60 Hz notch — his block, and the easiest to explain
+  }
+</script>
+
+<style>
+  .chain { margin: 0; }
+  .chain__cap { color: var(--fg-2); font-size: 0.94rem; max-width: 60ch; margin-bottom: 1.75rem; }
+  .chain__cap strong { color: var(--fg); display: block; margin-bottom: 0.3rem; }
+  .chain__key { color: var(--accent); white-space: nowrap; }
+  .chain__key i {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 3px var(--glow);
+  }
+
+  /* One row that scrolls, never a wrapped grid: a chain that wraps puts a
+     connector into empty space and breaks the left-to-right reading order. */
+  .chain__row {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.75rem;
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .chain__row li { position: relative; flex: 0 0 10rem; scroll-snap-align: start; }
+
+  /* connector: a short run of "wire" into the next block */
+  .chain__row li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -0.75rem;
+    width: 0.75rem;
+    height: 1px;
+    background: var(--line);
+  }
+  .chain__row::-webkit-scrollbar { height: 6px; }
+  .chain__row::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+  .chain__block {
+    display: grid;
+    gap: 0.3rem;
+    width: 100%;
+    height: 100%;
+    text-align: left;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--bg-2);
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+  .chain__block:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .chain__block[aria-expanded='true'] { border-color: var(--accent); background: var(--wash); }
+
+  .chain__block.is-mine { border-left: 2px solid var(--accent); }
+
+  .chain__i { font-size: 0.6rem; color: var(--fg-3); letter-spacing: 0.14em; }
+  .chain__name { font-size: 0.86rem; font-weight: 600; line-height: 1.25; }
+  .chain__spec { font-size: 0.62rem; color: var(--accent); letter-spacing: 0.03em; }
+
+  /* ------------------------------------------------------------- panel */
+  .chain__detail { margin-top: 1.5rem; }
+  .chain__panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+    gap: 2rem;
+    align-items: start;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--bg-2);
+    padding: 1.75rem;
+  }
+  .chain__panel[hidden] { display: none; }
+  @media (max-width: 800px) { .chain__panel { grid-template-columns: 1fr; } }
+
+  .chain__text h4 { font-size: 1.15rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem; }
+  .chain__mine {
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 100px;
+    padding: 0.15rem 0.5rem;
+  }
+  .chain__pspec { color: var(--accent); margin: 0.6rem 0 0.9rem; font-size: 0.8rem; }
+  .chain__text p:last-child { color: var(--fg-2); max-width: 54ch; }
+
+  .chain__shot { display: grid; gap: 0.5rem; }
+  .chain__shot :global(img) {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    /* Cadence exports are black-on-white; invert to sit in a dark UI without
+       repainting every schematic by hand. */
+    filter: invert(1) hue-rotate(180deg) contrast(0.88);
+    background: #fff;
+  }
+  .chain__shot span { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+  .chain__shot:hover span { color: var(--accent); }
+</style>

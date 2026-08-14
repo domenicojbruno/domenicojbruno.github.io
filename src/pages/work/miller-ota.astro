@@ -1,0 +1,124 @@
+---
+import CaseLayout from '../../layouts/CaseLayout.astro';
+
+const devices = [
+  ['M1, M2', '120 µm / 20 µm', 'Input differential pair'],
+  ['M3, M4', '300 nm / 300 nm', 'Active load'],
+  ['M5', '6.5 µm / 1 µm', 'Tail current source'],
+  ['M6', '43.25 µm / 1 µm', 'Second-stage driver'],
+  ['M7', '93 µm / 2 µm', 'Second-stage load'],
+];
+
+const specs = [
+  ['Open-loop gain', '≥ 75 dB', '82.55 dB', true],
+  ['Phase margin', '≥ 60°', '60°', true],
+  ['Unity-gain frequency', '≥ 25 MHz', '25 MHz', true],
+  ['ICMR', '≥ 2 V', '2.1 V', true],
+  ['Bandgap output', '1.00 V', '1.00 V', true],
+  ['Temperature coefficient', '< 100 ppm/°C', '80 ppm/°C', true],
+  ['Power', '< 1.5 mW', 'within budget', true],
+  ['Supply range', '3.0 – 3.6 V', 'verified', true],
+];
+---
+
+<CaseLayout slug="miller-ota">
+  <section>
+    <h2>The build</h2>
+    <p class="muted">
+      A textbook two-stage OTA is easy to draw and unforgiving to close. The
+      first stage is a differential pair with an active load; the second is a
+      common-source driver. Cascading them buys gain and costs you a second pole,
+      which is where the compensation network earns its keep.
+    </p>
+    <p class="muted">
+      Miller compensation splits the poles by wrapping <code>C<sub>c</sub></code>
+      around the second stage — but the same capacitor creates a right-half-plane
+      zero that drags phase down exactly where you need margin. A zero-nulling
+      resistor in series with <code>C<sub>c</sub></code> pushes that zero out of
+      the way. That pairing is what takes the amplifier from unstable to 60° of
+      phase margin without giving back bandwidth.
+    </p>
+  </section>
+
+  <section>
+    <h2>Device sizing</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Device</th><th>W / L</th><th>Role</th></tr></thead>
+        <tbody>
+          {devices.map(([d, wl, role]) => (
+            <tr><td>{d}</td><td>{wl}</td><td>{role}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted small">
+      C<sub>c</sub> = 1 fF · C<sub>L</sub> = 10 pF · V<sub>bias</sub> = 947.049 mV
+    </p>
+  </section>
+
+  <section>
+    <h2>Target vs. measured</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Parameter</th><th>Target</th><th>Achieved</th><th></th></tr></thead>
+        <tbody>
+          {specs.map(([p, t, a, ok]) => (
+            <tr>
+              <td>{p}</td>
+              <td class="dim">{t}</td>
+              <td>{a}</td>
+              <td class="tick">{ok ? '✓' : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">
+      Verified at 0 °C, 25 °C and 70 °C across the supply range. The bandgap
+      includes a startup circuit — without one the reference has a perfectly
+      stable second operating point at zero, and it will happily sit there
+      forever.
+    </p>
+  </section>
+
+  <section>
+    <h2>Layout and physical verification</h2>
+    <p class="muted">
+      This is the project where the design stopped being a schematic. The full
+      flow in Calibre — DRC for the foundry rules, LVS to prove the layout is the
+      circuit I drew, PEX to pull out the parasitics — then back into ADE&nbsp;L to
+      re-simulate against the extracted netlist.
+    </p>
+    <p class="muted">
+      Post-layout is where optimistic schematics go to die: routing capacitance
+      loads the compensation node and eats phase margin. Getting the amplifier to
+      hold spec with the parasitics in was the actual work, and it is why I now
+      draw the compensation network before I draw anything else.
+    </p>
+  </section>
+</CaseLayout>
+
+<style>
+  h2 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin-bottom: 1rem; }
+  code { font-family: var(--mono); font-size: 0.9em; color: var(--accent); }
+
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; min-width: 30rem; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--line); }
+  thead th {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    background: var(--bg-2);
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td:nth-child(2) { font-family: var(--mono); }
+  .dim { color: var(--fg-3); }
+  .tick { color: var(--accent); width: 2rem; text-align: center; }
+  table:has(th:nth-child(4)) td:nth-child(3) { font-family: var(--mono); color: var(--accent); }
+
+  .small { font-family: var(--mono); font-size: 0.78rem; margin-top: 0.9rem; }
+</style>
