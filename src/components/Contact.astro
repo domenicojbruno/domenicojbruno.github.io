@@ -1,12 +1,11 @@
 ---
 import { me } from '../lib/site';
 
-const links = [
+const links: [string, string, string][] = [
   ['Email', me.email, `mailto:${me.email}`],
   ['Phone', me.phone, `tel:${me.phone.replace(/[^+\d]/g, '')}`],
-  ['GitHub', me.github && '@' + me.github.split('/').pop(), me.github],
-  ['LinkedIn', me.linkedin && 'Domenico Bruno', me.linkedin],
-].filter((l): l is [string, string, string] => Boolean(l[1] && l[2]));
+  ['LinkedIn', '/in/domenico-j-bruno', me.linkedin],
+];
 ---
 
 <section id="noise" data-theme="noise" class="section noise">
@@ -27,13 +26,14 @@ const links = [
       {links.map(([k, v, href]) => (
         <li>
           <span class="noise__k">{k}</span>
-          <a href={href}>{v}</a>
+          <a href={href} {...(href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{v}</a>
         </li>
       ))}
     </ul>
 
     <div class="noise__cta reveal">
       <a class="btn btn--primary" href={`mailto:${me.email}`}>{me.email}</a>
+      <a class="btn" href={me.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>
       <a class="btn" href={me.resume} download>Download CV (PDF)</a>
     </div>
 

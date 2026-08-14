@@ -5,20 +5,18 @@ export const me = {
   name: 'Domenico Bruno',
   first: 'Domenico',
   last: 'Bruno',
+  pronouns: 'He/Him',
   role: 'Analog IC Design',
   tagline: 'Analog IC design for low-power biopotential sensing.',
   email: 'djbruno@wpi.edu',
   phone: '+1 781-960-7292',
-  location: 'Boston, MA',
+  location: 'Medford, MA',
   school: 'Worcester Polytechnic Institute',
   degree: 'BS/MS Electrical & Computer Engineering',
   grad: 'December 2027',
   gpa: '3.66 / 4.0',
   resume: '/domenico-bruno-resume.pdf',
-  // TODO(polish): neither of these appears anywhere in his files — confirm
-  // before launch. Nav hides any link left null.
-  github: null as string | null,
-  linkedin: null as string | null,
+  linkedin: 'https://www.linkedin.com/in/domenico-j-bruno/',
 };
 
 export type SectionId =

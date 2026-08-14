@@ -54,12 +54,21 @@ const PHOTOS = [
   ['Side Hobbies/LegoDormRoom.png', 'lego-dorm.jpg', 800],
 ];
 
+/** Any file named `headshot.*` at the root of the raw folder gets picked up. */
+async function findHeadshot() {
+  const hit = (await readdir(RAW)).find((f) => /^headshot\.(jpe?g|png|webp)$/i.test(f));
+  return hit ? [hit, 'headshot.jpg', 900] : null;
+}
+
 async function personal() {
   console.log('\npersonal  (EXIF + GPS stripped by sharp)');
   const dest = out('src/assets/personal');
   await mkdir(dest, { recursive: true });
 
-  for (const [src, name, width] of PHOTOS) {
+  const head = await findHeadshot();
+  if (!head) console.log('  (no headshot.* found at the raw folder root — skipping)');
+
+  for (const [src, name, width] of head ? [...PHOTOS, head] : PHOTOS) {
     const p = join(dest, name);
     await sharp(join(RAW, src))
       .rotate()                       // honour EXIF orientation before dropping it

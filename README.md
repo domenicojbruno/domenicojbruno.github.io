@@ -62,11 +62,18 @@ third-party figures pulled from papers in the event-camera folder.
 
 ## Before launch
 
-- [ ] Real GitHub + LinkedIn URLs → `src/lib/site.ts` (`github`, `linkedin` are
-      `null`; the contact list hides any link that is null)
-- [ ] Headshot → `src/assets/personal/headshot.jpg`, then use it in `About.astro`
+- [x] LinkedIn → `src/lib/site.ts`. No GitHub account exists, so there is no
+      GitHub link anywhere; add one to `site.ts` and `Contact.astro` if that changes.
+- [ ] Headshot → save it as `headshot.jpg` in the raw `Portfolio Website` folder,
+      then `npm run assets` picks it up automatically. Wire into `About.astro`.
 - [ ] Real domain → `site` in `astro.config.mjs` (drives canonical + `og:image`)
 - [ ] CO₂ sensor project — on the CV, no supporting material exists yet
+- [x] Dates reconciled against LinkedIn. Corrections applied: the internship ran
+      **May – Aug 2026** (CV said "Summer 2026") in **Westford** at the Lincoln
+      Space Surveillance Complex, not Lexington. Location is Medford, not Boston.
+      The CV is wrong on both counts and should be fixed.
+- [ ] Two roles on the CV are missing from LinkedIn — the ECE 2201 TA position and
+      the ICS Lab research assistantship. The site lists both; add them to LinkedIn.
 - [ ] Confirm the Miller OTA figures. The CV says "Sept 2025, 54 dB"; the ECE 4902
       files say Dec 2025, 82.55 dB. The site currently uses the ECE 4902 numbers.
       If these are two different amplifiers, the second one needs its own entry.
