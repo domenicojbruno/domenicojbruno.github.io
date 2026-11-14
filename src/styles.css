@@ -324,3 +324,55 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* ---------------------------------------------- nav labels: plates + ports */
+/* Labels sit on a solid plate so they stay legible over copper, and each one
+   carries a pulsing "port" where its bus arrives: the board shows what is
+   clickable without telling anyone to click. */
+.label {
+  background: rgba(5, 9, 7, 0.88);
+  border: 1px solid color-mix(in srgb, var(--net) 50%, transparent);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  text-shadow: none; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.label__net { color: #c9d2cb; }
+.label:hover, .label:focus-visible, .label.is-hot {
+  background: rgba(4, 7, 5, 0.94); border-color: var(--net);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.55), 0 0 18px color-mix(in srgb, var(--net) 45%, transparent);
+}
+.label::after {
+  content: ''; position: absolute; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--net); animation: port 2.2s ease-out infinite;
+}
+.label--l::after { right: -5px; top: calc(50% - 4.5px); }
+.label--r::after { left: -5px; top: calc(50% - 4.5px); }
+.label--t::after { bottom: -5px; left: calc(6% - 4.5px); }
+.label--b::after { top: -5px; left: calc(6% - 4.5px); }
+.label--t.label--west::after, .label--b.label--west::after { left: calc(94% - 4.5px); }
+@keyframes port {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--net) 75%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 13px transparent; }
+}
+.label__name i { animation: nudge-x 1.8s ease-in-out infinite; }
+.label--l .label__name i { animation-name: nudge-xr; }
+.label--b .label__name i { animation-name: nudge-y; }
+.label--t .label__name i { animation-name: nudge-yr; }
+@keyframes nudge-x { 0%, 100% { transform: none; } 50% { transform: translateX(4px); } }
+@keyframes nudge-xr { 0%, 100% { transform: none; } 50% { transform: translateX(-4px); } }
+@keyframes nudge-y { 0%, 100% { transform: none; } 50% { transform: translateY(3px); } }
+@keyframes nudge-yr { 0%, 100% { transform: none; } 50% { transform: translateY(-3px); } }
+
+/* 2D board: page buses stay tinted on the home view, and are tappable */
+.b2d-net.is-idle { opacity: 0.42; }
+.b2d-hit { cursor: pointer; }
+.b2d.is-reset { animation: b2d-reset 1.9s ease-out; }
+@keyframes b2d-reset {
+  0% { filter: none; } 6%, 36% { filter: brightness(0.22); } 42% { filter: brightness(1.5); } 100% { filter: none; }
+}
+.m-label .label__name i { display: inline-block; animation: nudge-x 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .label::after, .label__name i, .m-label .label__name i, .b2d.is-reset { animation: none !important; }
+}

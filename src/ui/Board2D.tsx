@@ -5,14 +5,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { BOARD, mcu, navBuses, peripheralOf } from '../board/layout';
+import { BOARD, mcu, navBuses, peripheralOf, comp } from '../board/layout';
+import { footprint } from '../board/footprints';
 import { NAV, navById } from '../board/nets';
 import { boardMarkup, navPaths, polyD } from '../board/svg';
 import { isWide } from '../board/view';
 import type { NavId, PageId } from '../board/types';
 import { profile } from '../content';
 import { useStore, type Ride } from '../state/store';
-import { useRideLink } from './nav';
+import { useGo, useRideLink } from './nav';
 
 interface VB { x: number; y: number; w: number; h: number }
 
@@ -37,7 +38,21 @@ export function Board2D() {
   const hover = useStore((s) => s.hover);
   const setHover = useStore((s) => s.setHover);
   const link = useRideLink();
+  const go = useGo();
+  const reset = useStore((s) => s.reset);
+  const resets = useStore((s) => s.resets);
   const [lit, setLit] = useState<NavId[]>([]);
+  const [rebooting, setRebooting] = useState(false);
+  const sw1 = useMemo(() => { const c = comp('SW1'), f = footprint(c.type); return { x: c.x - f.w / 2, y: c.y - f.h / 2, w: f.w, h: f.h }; }, []);
+
+  // SW1: brown-out, then every bus lights as the board comes back up
+  useEffect(() => {
+    if (!resets) return;
+    setRebooting(true);
+    const t1 = window.setTimeout(() => setLit(NAV.map((n) => n.id)), 700);
+    const t2 = window.setTimeout(() => { setLit([]); setRebooting(false); }, 1900);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+  }, [resets]);
   const markup = useMemo(() => boardMarkup('flat'), []);
   const nets = useMemo(() => NAV.map((n) => ({ n, paths: navPaths(n.id), lead: polyD(navBuses[n.id].lead) })), []);
 
@@ -87,17 +102,25 @@ export function Board2D() {
   const home = page === 'home' && phase === 'idle';
   return (
     <>
-      <svg ref={svg} className="b2d" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Printed circuit board with a central microcontroller and one chip per page">
+      <svg ref={svg} className={`b2d${rebooting ? ' is-reset' : ''}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="Printed circuit board with a central microcontroller and one chip per page">
         <rect x={-BOARD.w} y={-BOARD.h} width={BOARD.w * 3} height={BOARD.h * 3} fill="#07090b" />
         <g dangerouslySetInnerHTML={{ __html: markup }} />
         {nets.map(({ n, paths }) => {
           const on = lit.includes(n.id) || hover === n.id;
           return (
-            <g key={n.id} className={`b2d-net${on ? ' is-on' : ''}`} stroke={n.color} fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <g key={n.id} className={`b2d-net${on ? ' is-on' : home && !rebooting ? ' is-idle' : ''}`} stroke={n.color} fill="none" strokeLinecap="round" strokeLinejoin="round">
               {paths.map((p, i) => <path key={i} d={p.d} strokeWidth={p.layer === 'top' ? 0.42 : 0.3} strokeOpacity={p.layer === 'top' ? 1 : 0.45} strokeDasharray={p.layer === 'top' ? undefined : '0.9 0.7'} />)}
             </g>
           );
         })}
+        {/* the copper is tappable: a wide invisible stroke over each page bus, and the reset button */}
+        {home && nets.map(({ n, lead }) => (
+          <path
+            key={n.id} className="b2d-hit" d={lead} fill="none" stroke="transparent" strokeWidth={5} pointerEvents="stroke"
+            onClick={() => go(n.id)} onMouseEnter={() => setHover(n.id)} onMouseLeave={() => setHover(null)}
+          />
+        ))}
+        {home && <rect className="b2d-hit" x={sw1.x} y={sw1.y} width={sw1.w} height={sw1.h} fill="transparent" onClick={reset} />}
         <path ref={pulse} className="b2d-pulse" fill="none" strokeWidth="1.1" strokeLinecap="round" style={{ opacity: 0 }} />
       </svg>
       <div className={`m-home${home ? ' is-on' : ''}`} aria-hidden={!home}>

@@ -8,6 +8,7 @@ import { HOME, navById, pageFromPath, pathOf } from '../board/nets';
 import type { PageId } from '../board/types';
 import { projectBySlug } from '../content';
 import { useStore } from '../state/store';
+import { track } from '../analytics';
 
 export function useGo() {
   const navigate = useNavigate();
@@ -53,6 +54,9 @@ export function useRouteSync() {
     const target = pageFromPath(loc.pathname).page;
     if (target !== s.page) s.startRide(target);            // back / forward plays the matching ride
   }, [loc.pathname, phase, arrivals, navigate]);
+
+  // one page view per URL (first load and every in-app navigation)
+  useEffect(() => { track(loc.pathname); }, [loc.pathname]);
 
   // <title> and meta description per route
   useEffect(() => {

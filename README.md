@@ -6,7 +6,8 @@ same board, and navigating is a first-person ride along the copper trace that
 connects them.
 
 Vite + React 18 + TypeScript, Three.js via React Three Fiber, GSAP, Zustand,
-React Router. Static build, no backend, no tracking, no external requests.
+React Router. Static build, no backend. No external requests unless visit
+statistics are switched on (see below).
 
 ```bash
 npm install
@@ -24,6 +25,21 @@ Pushing to `main` builds and deploys to GitHub Pages
 in `vite.config.ts` is `/`; for a project site set it to `/<repo>/`.
 `public/404.html` is the SPA fallback that makes deep links such as `/resume`
 work on Pages.
+
+## Visit statistics
+
+GitHub Pages has no server logs, so views are counted with
+[GoatCounter](https://www.goatcounter.com) (cookieless, no personal data, free
+for personal sites). It is off until a site code is set:
+
+1. Sign up at goatcounter.com and pick a code, e.g. `djbruno`.
+2. Put it in `src/content/profile.json`: `"analytics": { "goatcounter": "djbruno" }`.
+3. Push. The dashboard is then at `https://djbruno.goatcounter.com`.
+
+It shows visits per page, referrers, countries and devices. It cannot name
+individual visitors. To tell which recruiter or posting a visit came from,
+share tagged links such as `https://domenicojbruno.github.io/?ref=acme-jane`;
+each tag shows up as its own referrer.
 
 ## Editing content
 

@@ -23,5 +23,6 @@ export const fx = {
   plan: null as RidePlan | null,
   planId: 0,
   power: { id: null as NavId | null, t0: -100 }, // arrival "power on" of a peripheral
+  reset: { t0: -100 },                           // SW1 pressed: brown-out, then the board reboots
   time: 0,
 };

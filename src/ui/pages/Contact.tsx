@@ -1,5 +1,6 @@
 import { profile } from '../../content';
 import { toast } from '../Toast';
+import { analyticsEnabled } from '../../analytics';
 
 export function Contact() {
   const copy = async () => {
@@ -35,7 +36,7 @@ export function Contact() {
         <a className="btn btn--primary" href={`mailto:${profile.email}`}>{profile.email}</a>
         <a className="btn" href={profile.resume} download={profile.resumeFileName}>Download resume (PDF)</a>
       </p>
-      <p className="muted small">{profile.location} · No tracking on this site.</p>
+      <p className="muted small">{profile.location} · {analyticsEnabled ? 'Anonymous visit counts only, no cookies.' : 'No tracking on this site.'}</p>
     </>
   );
 }

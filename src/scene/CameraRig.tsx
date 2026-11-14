@@ -8,10 +8,11 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import gsap from 'gsap';
-import { peripheralOf, navBuses } from '../board/layout';
-import { polyLength } from '../board/geom';
-import { NAV } from '../board/nets';
-import { planRide, toWorld, type RidePlan } from '../board/routes';
+import { peripheralOf, navBuses, comp } from '../board/layout';
+import { courtyard } from '../board/footprints';
+import { polyLength, pointInRect, ptSegDist } from '../board/geom';
+import { NAV, pathOf } from '../board/nets';
+import { planRide, toWorld, OX, OZ, type RidePlan } from '../board/routes';
 import { FOV, TAN, TILT, homeFrame, pageFrame, isWide } from '../board/view';
 import type { NavId, PageId } from '../board/types';
 import { useStore, type Ride } from '../state/store';
@@ -46,7 +47,7 @@ function restPose(page: PageId, w: number, h: number, out: Pose, target = new TH
 }
 
 export function CameraRig() {
-  const { camera, size, invalidate, scene } = useThree();
+  const { camera, size, invalidate, scene, gl } = useThree();
   const cam = camera as THREE.PerspectiveCamera;
   const sizeRef = useRef(size);
   sizeRef.current = size;
@@ -56,7 +57,7 @@ export function CameraRig() {
     e: 0, start: pose(), startFov: FOV, end: pose(), rp: pose(),
     roll: 0, fov: FOV, lastU: 0, lastRight: new THREE.Vector3(1, 0, 0), arrived: false,
     mouse: { x: 0, y: 0 }, par: { x: 0, y: 0 },
-    frames: 0, slow: 0, idle: { id: null as NavId | null, t0: 0, next: 4 },
+    frames: 0, slow: 0, traceHover: null as NavId | null,
     rest: pose(), tgt: new THREE.Vector3(),
   }).current;
 
@@ -70,6 +71,7 @@ export function CameraRig() {
     const begin = (ride: Ride) => {
       const plan = planRide(ride.from, ride.to);
       st.ride = ride; st.plan = plan; st.e = 0; st.roll = 0; st.lastU = 0; st.arrived = false; st.frames = 0; st.slow = 0;
+      st.traceHover = null; gl.domElement.style.cursor = '';
       st.start.pos.copy(cam.position); st.start.quat.copy(cam.quaternion); st.startFov = cam.fov;
       restPose(ride.to, sizeRef.current.width, sizeRef.current.height, st.end);
       st.mode = useStore.getState().reducedMotion ? 'glide' : 'ride';
@@ -83,7 +85,52 @@ export function CameraRig() {
       if (s.ride && s.ride !== p.ride) begin(s.ride);
       if (s.page !== p.page && !p.ride) { fx.power = { id: s.page === 'home' ? null : s.page, t0: -100 }; }
       if (s.hover !== p.hover || s.hoverProject !== p.hoverProject || s.page !== p.page || s.quality !== p.quality) invalidate();
+      if (s.resets !== p.resets) { fx.reset.t0 = performance.now() / 1000; sound.click(); invalidate(); }
     });
+
+    // The copper is the navigation: hovering a page bus lights it, clicking it rides it.
+    // SW1 is a working reset button. Both are picked by projecting the pointer onto the board.
+    const el = gl.domElement;
+    const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+    const sw1 = courtyard(comp('SW1'));
+    const pick = (ev: MouseEvent): { nav: NavId | null; sw: boolean } => {
+      const s = useStore.getState();
+      if (st.mode !== 'rest' || s.page !== 'home' || s.phase !== 'idle') return { nav: null, sw: false };
+      const r = el.getBoundingClientRect();
+      ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, cam);
+      const o = ray.ray.origin, d = ray.ray.direction;
+      if (Math.abs(d.y) < 1e-6) return { nav: null, sw: false };
+      const t = -o.y / d.y;
+      const p = { x: o.x + d.x * t + OX, y: o.z + d.z * t + OZ };
+      if (pointInRect(p, sw1, 0.5)) return { nav: null, sw: true };
+      let best: NavId | null = null, bd = 2.7;
+      for (const n of NAV) {
+        const lead = navBuses[n.id].lead;
+        for (let i = 1; i < lead.length; i++) {
+          const dd = ptSegDist(p, lead[i - 1], lead[i]);
+          if (dd < bd) { bd = dd; best = n.id; }
+        }
+      }
+      return { nav: best, sw: false };
+    };
+    const onPick = (ev: PointerEvent) => {
+      const h = pick(ev);
+      el.style.cursor = h.nav || h.sw ? 'pointer' : '';
+      if (h.nav !== st.traceHover) { st.traceHover = h.nav; useStore.getState().setHover(h.nav); }
+    };
+    const onLeave = () => {
+      el.style.cursor = '';
+      if (st.traceHover) { st.traceHover = null; useStore.getState().setHover(null); }
+    };
+    const onClick = (ev: MouseEvent) => {
+      const h = pick(ev);
+      if (h.sw) useStore.getState().reset();
+      else if (h.nav) useStore.getState().startRide(h.nav, pathOf(h.nav));
+    };
+    el.addEventListener('pointermove', onPick);
+    el.addEventListener('pointerleave', onLeave);
+    el.addEventListener('click', onClick);
     const move = (ev: PointerEvent) => {
       st.mouse.x = (ev.clientX / window.innerWidth) * 2 - 1;
       st.mouse.y = (ev.clientY / window.innerHeight) * 2 - 1;
@@ -103,7 +150,10 @@ export function CameraRig() {
       const s = useStore.getState();
       if (!document.hidden && s.page === 'home' && s.phase === 'idle') invalidate();
     }, 110);
-    return () => { unsub(); window.removeEventListener('pointermove', move); window.clearInterval(tick); window.clearTimeout(warm); unsubWarm(); useStore.setState({ executor: false }); };
+    return () => {
+      el.removeEventListener('pointermove', onPick); el.removeEventListener('pointerleave', onLeave); el.removeEventListener('click', onClick);
+      unsub(); window.removeEventListener('pointermove', move); window.clearInterval(tick); window.clearTimeout(warm); unsubWarm(); useStore.setState({ executor: false });
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -143,6 +193,8 @@ export function CameraRig() {
     const now = performance.now() / 1000;
     fx.time = now;
     let busy = false;
+    const rz = now - fx.reset.t0;                         // seconds since SW1 was pressed
+    const resetting = st.mode === 'rest' && rz < 2.6;
 
     if (st.mode !== 'rest' && st.plan && st.ride) {
       const plan = st.plan;
@@ -227,16 +279,18 @@ export function CameraRig() {
       st.fov = FOV;
       // hover: a slow pulse runs from the MCU pin toward the label
       for (const n of NAV) fx.head[NET_INDEX[n.id]] = -1;
-      if (s.hover) {
+      if (resetting) {
+        // SW1: brown-out, then every bus fires at once as the board comes back up
+        busy = true;
+        if (rz > 0.75) for (const n of NAV) { fx.head[NET_INDEX[n.id]] = (rz - 0.75) * 75; fx.dir[NET_INDEX[n.id]] = 1; }
+      } else if (s.hover) {
         fx.head[NET_INDEX[s.hover]] = (now * 24) % (LEN[s.hover] + 30); fx.dir[NET_INDEX[s.hover]] = 1; busy = true;
-      } else if (s.page === 'home') {
-        // occasional faint pulse on a random net
-        if (!st.idle.id && now > st.idle.next) st.idle = { id: NAV[Math.floor(Math.random() * NAV.length)].id, t0: now, next: 0 };
-        if (st.idle.id) {
-          const p = (now - st.idle.t0) * 30;
-          if (p > LEN[st.idle.id] + 30) st.idle = { id: null, t0: 0, next: now + 5 + Math.random() * 5 };
-          else { fx.head[NET_INDEX[st.idle.id]] = p; fx.dir[NET_INDEX[st.idle.id]] = 1; busy = true; }
-        }
+      } else if (s.page === 'home' && !s.reducedMotion) {
+        // current flows from the MCU out along every page bus, staggered: the traces read as the way in
+        NAV.forEach((n, i) => {
+          fx.head[NET_INDEX[n.id]] = (now * 30 + i * 41) % (LEN[n.id] + 55); fx.dir[NET_INDEX[n.id]] = 1;
+        });
+        busy = true;
       }
       if (now - fx.power.t0 < 2.4) busy = true;
     }
@@ -248,13 +302,14 @@ export function CameraRig() {
       const i = NET_INDEX[n.id];
       let target = 0;
       if (st.mode !== 'rest' && st.plan) target = st.plan.nets.includes(n.id) ? 1 : 0;
+      else if (resetting) target = rz < 0.75 ? 0 : 1;
       else if (s.hover === n.id) target = 1;
-      else if (!s.hover && st.idle.id === n.id && s.page === 'home') target = 0.1;
+      else if (!s.hover && s.page === 'home') target = 0.13;       // page buses stay faintly tinted
       if (target > 0.5) lit = true;
       fx.level[i] += (target - fx.level[i]) * k;
       if (Math.abs(target - fx.level[i]) > 0.004) busy = true; else fx.level[i] = target;
     }
-    const dimT = lit ? 0.5 : 1;
+    const dimT = resetting && rz < 0.75 ? 0.13 : lit ? 0.5 : 1;
     fx.dim += (dimT - fx.dim) * k;
     if (Math.abs(dimT - fx.dim) > 0.004) busy = true; else fx.dim = dimT;
 

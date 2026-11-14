@@ -39,7 +39,7 @@ void main() {
   float d = (vS - hd) * uDir[n];                 // > 0 ahead of the pulse head
   float pulse = hd < -0.5 ? 0.0 : (d > 0.0 ? exp(-d * d / 2.5) : 0.9 * exp(d / 13.0));
   vec3 col = c * (0.72 + 3.6 * pulse);
-  float a = smoothstep(0.0, 0.25, lv);
+  float a = max(smoothstep(0.0, 0.25, lv), pulse * smoothstep(0.0, 0.08, lv));
   if (uMode > 0.5 && uMode < 1.5) a *= 0.34 + 0.5 * pulse;
   if (uMode > 1.5) { col = mix(vec3(0.55, 0.27, 0.09), col, max(lv, 0.0)); a = 1.0; }
   if (a < 0.004) discard;

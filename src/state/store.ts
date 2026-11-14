@@ -40,6 +40,8 @@ interface State {
   reducedMotion: boolean;
   muted: boolean;
   quality: 'high' | 'low';
+  resets: number;                  // SW1 presses
+  reset: () => void;
   setHover: (h: NavId | null) => void;
   setHoverProject: (s: string | null) => void;
   startRide: (to: PageId, push?: string) => boolean;
@@ -67,6 +69,8 @@ export const useStore = create<State>((set, get) => ({
   reducedMotion: typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   muted: stored('pcb-sound') !== 'on',
   quality: 'high',
+  resets: 0,
+  reset: () => { const s = get(); if (s.phase === 'idle' && s.page === 'home') set({ resets: s.resets + 1 }); },
   setHover: (hover) => { if (get().hover !== hover) set({ hover }); },
   setHoverProject: (hoverProject) => { if (get().hoverProject !== hoverProject) set({ hoverProject }); },
   startRide: (to, push) => {

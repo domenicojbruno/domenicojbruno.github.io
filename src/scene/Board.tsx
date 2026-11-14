@@ -62,6 +62,9 @@ export function Board({ texture }: { texture: THREE.Texture }) {
     ];
     const led = instanced(boxGeo, ledMat, parts.led);
     const ledIndex = (ref: string) => parts.led.findIndex((i) => i.ref === ref);
+    // SW1 plunger: animated when the reset button is pressed
+    const plungerIndex = parts.cylD.findIndex((i) => i.ref === 'SW1');
+    const plunger = { mesh: meshes[2], index: plungerIndex, base: parts.cylD[plungerIndex].m.clone(), m: new THREE.Matrix4() };
     // steady states: D2 power on, D3 idle, connector LEDs dim
     parts.led.forEach((it, i) => {
       const base = it.ref === 'D2' ? tmpC.set('#35ff7a').multiplyScalar(1.7) : it.ref === 'D3' ? tmpC.set('#3a3327') : it.ref === 'D1' ? tmpC.set('#2a0808') : tmpC.copy(it.c).multiplyScalar(0.5);
@@ -122,12 +125,12 @@ export function Board({ texture }: { texture: THREE.Texture }) {
     const topMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.42, metalness: 0.12, envMapIntensity: 0.55 });
     const gndMat = new THREE.MeshBasicMaterial({ map: planeTexture('#7a4418'), side: THREE.BackSide });
     const pwrMat = new THREE.MeshBasicMaterial({ map: planeTexture('#8a4a1a'), side: THREE.FrontSide });
-    return { meshes, led, ledIndex, markings, glows, barrels, tubes, topMat, gndMat, pwrMat };
+    return { meshes, led, ledIndex, markings, glows, barrels, tubes, topMat, gndMat, pwrMat, plunger };
   }, [texture]);
 
   useEffect(() => { invalidate(); }, [built, invalidate]);
 
-  const d1 = built.ledIndex('D1'), d3 = built.ledIndex('D3');
+  const d1 = built.ledIndex('D1'), d2 = built.ledIndex('D2'), d3 = built.ledIndex('D3');
   const white = useMemo(() => new THREE.Color(1, 1, 1), []);
   const projColor = useMemo(() => new THREE.Color(NAV.find((n) => n.id === 'projects')!.color), []);
 
@@ -136,7 +139,17 @@ export function Board({ texture }: { texture: THREE.Texture }) {
     // D1 heartbeat (lub-dub), D3 activity flicker while a net is lit
     const ph = (t % 1.25) / 1.25;
     const beat = Math.max(Math.exp(-(((ph - 0.08) / 0.045) ** 2)), 0.65 * Math.exp(-(((ph - 0.27) / 0.055) ** 2)));
-    built.led.setColorAt(d1, tmpC.setRGB(0.16 + 3.2 * beat, 0.03 + 0.25 * beat, 0.03));
+    // SW1 reset: plunger travels, rails drop for 0.75 s (LEDs and marking go dark), then power returns
+    const rz = t - fx.reset.t0;
+    const dark = rz < 0.75;
+    const press = rz < 0.09 ? rz / 0.09 : rz < 0.45 ? 1 - (rz - 0.09) / 0.36 : 0;
+    built.plunger.m.copy(built.plunger.base);
+    built.plunger.m.elements[13] -= 0.55 * press;
+    built.plunger.mesh.setMatrixAt(built.plunger.index, built.plunger.m);
+    built.plunger.mesh.instanceMatrix.needsUpdate = true;
+    built.led.setColorAt(d2, dark ? tmpC.setRGB(0.02, 0.05, 0.03) : tmpC.set('#35ff7a').multiplyScalar(1.7));
+    if (dark) built.led.setColorAt(d1, tmpC.setRGB(0.05, 0.01, 0.01));
+    else built.led.setColorAt(d1, tmpC.setRGB(0.16 + 3.2 * beat, 0.03 + 0.25 * beat, 0.03));
     const act = fx.pulseOn > 0 ? 0.5 + 0.5 * Math.sin(t * 40) : 0;
     built.led.setColorAt(d3, tmpC.setRGB(0.22 + 2.4 * act, 0.2 + 1.6 * act, 0.15));
     built.led.instanceColor!.needsUpdate = true;
@@ -157,7 +170,9 @@ export function Board({ texture }: { texture: THREE.Texture }) {
     const hoverProject = useStore.getState().hoverProject;
     for (const m of built.markings) {
       if (m.c.type === 'rfshield' && fx.power.id !== m.c.pageId) continue;
-      if (m.c.pageId && m.c.pageId !== 'home') {
+      if (m.c.ref === 'U1') {
+        m.mat.color.setScalar(dark ? 0.2 : rz < 2.6 ? 1 + 2.4 * Math.exp(-(rz - 0.75) * 3.2) : 1);
+      } else if (m.c.pageId && m.c.pageId !== 'home') {
         const on = fx.power.id === m.c.pageId;
         const g = on ? THREE.MathUtils.smoothstep(e, 0.4, 0.7) : 0;
         const net = built.glows.find((x) => x.id === m.c.pageId)!.color;

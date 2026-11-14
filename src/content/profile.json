@@ -22,6 +22,9 @@
   "resume": "/resume.pdf",
   "resumeFileName": "Domenico_Bruno_Resume.pdf",
   "siteUrl": "https://domenicojbruno.github.io",
+  "analytics": {
+    "goatcounter": "djbruno"
+  },
   "education": [
     {
       "school": "Worcester Polytechnic Institute (WPI)",
