@@ -1,0 +1,165 @@
+{
+  "name": "Domenico J Bruno",
+  "shortName": "Domenico Bruno",
+  "pronouns": "He/Him",
+  "role": "Analog IC Design",
+  "tagline": "Analog IC design for low-power biopotential sensing.",
+  "intro": "Analog IC design for low-power biopotential sensing. Subthreshold OTAs, OTA-C filters and nanoampere references in 180 nm CMOS — circuits that pull microvolt signals off the human body without draining the battery.",
+  "summary": "Low-power analog/mixed-signal IC designer with experience in CMOS front-ends for biopotential and physiological sensing, seeking hands-on industry experience in analog front-end design and verification.",
+  "status": "Seeking analog / mixed-signal internship",
+  "school": "Worcester Polytechnic Institute",
+  "schoolShort": "WPI",
+  "degree": "BS/MS Electrical & Computer Engineering",
+  "degreeShort": "BS/MS ECE",
+  "grad": "December 2027",
+  "location": "Medford, MA",
+  "email": "djbruno@wpi.edu",
+  "phone": "+1 781-960-7292",
+  "linkedin": "https://www.linkedin.com/in/domenico-j-bruno/",
+  "linkedinLabel": "/in/domenico-j-bruno",
+  "github": "https://github.com/domenicojbruno",
+  "githubLabel": "@domenicojbruno",
+  "resume": "/resume.pdf",
+  "resumeFileName": "Domenico_Bruno_Resume.pdf",
+  "siteUrl": "https://domenicojbruno.github.io",
+  "education": [
+    {
+      "school": "Worcester Polytechnic Institute (WPI)",
+      "place": "Worcester, MA",
+      "degree": "Master of Science (MS) in Electrical and Computer Engineering",
+      "when": "Expected Dec 2027",
+      "gpa": "4.0 / 4.0"
+    },
+    {
+      "school": "Worcester Polytechnic Institute (WPI)",
+      "place": "Worcester, MA",
+      "degree": "Bachelor of Science (BS) in Electrical and Computer Engineering",
+      "when": "Expected May 2027",
+      "gpa": "3.66 / 4.0"
+    }
+  ],
+  "coursework": [
+    {
+      "code": "ECE 524",
+      "title": "Advanced Analog IC Design",
+      "level": "Grad",
+      "outcome": "clEAR-ExG front-end, five design assignments in Virtuoso"
+    },
+    {
+      "code": "ECE 4902",
+      "title": "CMOS Fundamentals",
+      "level": "Grad",
+      "outcome": "Two-stage Miller OTA + bandgap, taken through layout and PEX"
+    },
+    {
+      "code": "ECE 5204",
+      "title": "Analog Circuits and Intuition",
+      "level": "Grad",
+      "outcome": "Feedback amplifier analysis, LTspice verification"
+    },
+    {
+      "code": "ECE 3829",
+      "title": "Advanced Digital Design with FPGAs",
+      "level": "UG",
+      "outcome": "VGA controller, timer FSMs, seven-segment drivers"
+    },
+    {
+      "code": "ECE 2029",
+      "title": "Digital Circuit Design",
+      "level": "UG",
+      "outcome": "Combinational logic, FSMs, the digital lock project"
+    },
+    {
+      "code": "ECE 2201",
+      "title": "Microelectronics I",
+      "level": "UG · TA",
+      "outcome": "Now teaching it"
+    }
+  ],
+  "skills": [
+    {
+      "group": "Analog & Mixed-Signal",
+      "items": [
+        "Subthreshold OTA design",
+        "OTA-C filters",
+        "CMOS amplifiers",
+        "Bandgap & beta-multiplier references",
+        "Chopper instrumentation amps",
+        "Miller compensation",
+        "PVT analysis",
+        "Noise analysis",
+        "PSRR / CMRR"
+      ]
+    },
+    {
+      "group": "EDA & Verification",
+      "items": [
+        "Cadence Virtuoso",
+        "Schematic & layout",
+        "ADE L / ADE XL",
+        "Spectre",
+        "Calibre DRC",
+        "Calibre LVS",
+        "Calibre PEX",
+        "LTspice"
+      ]
+    },
+    {
+      "group": "Hardware & Lab",
+      "items": [
+        "PCB design",
+        "RF measurement",
+        "Spectrum analyser",
+        "Oscilloscope",
+        "Signal generator",
+        "Multimeter",
+        "Bench characterisation",
+        "BOMs"
+      ]
+    },
+    {
+      "group": "Programming & HDL",
+      "items": [
+        "Verilog",
+        "C / C++",
+        "Python",
+        "MATLAB",
+        "FPGA (Basys 3, Vivado)"
+      ]
+    }
+  ],
+  "bench": [
+    {
+      "img": "/images/personal/drum-corps.jpg",
+      "alt": "Drum Corps International championship performance",
+      "caption": "Drum corps",
+      "note": "Trumpet section leader with the Spartans, Nashua NH — two summers of national competition. Nothing has taught me more about hitting a spec under pressure.",
+      "wide": true
+    },
+    {
+      "img": "/images/personal/cannoli.jpg",
+      "alt": "Cannoli, an apricot-coated dog sitting in autumn leaves",
+      "caption": "Cannoli",
+      "note": "Named after the pastry. Holds a steadier operating point than most of my circuits."
+    },
+    {
+      "img": "/images/personal/pizzelle.jpg",
+      "alt": "Pizzelle, a white dog with brown markings around the eyes",
+      "caption": "Pizzelle",
+      "note": "Also named after a pastry. Unimpressed by phase margin."
+    },
+    {
+      "img": "/images/personal/lego-kanto.jpg",
+      "alt": "Lego build of the Kanto region",
+      "caption": "Lego",
+      "note": "Building things that only need to satisfy me."
+    },
+    {
+      "img": "/images/personal/lego-dorm.jpg",
+      "alt": "Lego build of a dorm room",
+      "caption": "More Lego",
+      "note": "The dorm room, in brick."
+    }
+  ],
+  "contactLede": "Looking for an analog or mixed-signal internship where I can take a block from schematic through layout and silicon. If that is the kind of work on your bench, get in touch."
+}

@@ -1,0 +1,40 @@
+[
+  {
+    "title": "North America STEM Aspire Program Mentee",
+    "org": "Dell Technologies",
+    "place": "Hopkinton, MA",
+    "when": "Aug 2026 — Present",
+    "kind": "Program",
+    "bullets": [
+      "1 of 38 selected for STEM Aspire, pairing with a Dell engineer for technical mentorship and career development.",
+      "Participating in technical workshops, facility tours, collaborative problem-solving, and career preparation."
+    ]
+  },
+  {
+    "title": "Founding Member, IEEE Solid-State Circuits Society",
+    "org": "WPI Chapter",
+    "place": "Worcester, MA",
+    "when": "Sept 2025 — Present",
+    "kind": "Community",
+    "note": "Co-founded the chapter and ran technical events with working IC designers, because nothing like it existed on campus. The chapter was featured in IEEE Solid-State Circuits Magazine in its first year.",
+    "bullets": []
+  },
+  {
+    "title": "Resident Advisor & Union Bargaining Committee",
+    "org": "Worcester Polytechnic Institute",
+    "place": "Worcester, MA",
+    "when": "Aug 2024 — Present",
+    "kind": "Leadership",
+    "note": "Supporting 200+ residents into a third year: community events, resident concerns, conflict mediation. Also serve on the contract bargaining committee for the residential staff union.",
+    "bullets": []
+  },
+  {
+    "title": "Trumpet Section Leader",
+    "org": "Spartans Drum & Bugle Corps",
+    "place": "Nashua, NH",
+    "when": "Summers 2022 & 2023",
+    "kind": "Music",
+    "note": "Led the trumpet section through two national competitive seasons.",
+    "bullets": []
+  }
+]

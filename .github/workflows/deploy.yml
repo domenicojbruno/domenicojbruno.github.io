@@ -5,13 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Allow GITHUB_TOKEN to publish to Pages.
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Never run two deploys at once; let a newer push finish rather than cancelling it.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -21,17 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      # Explicit steps rather than withastro/action: when a build breaks, the
-      # failing command is visible in the log instead of buried in an action.
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
+      - run: npm run check:layout
       - run: npm run build
-
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist

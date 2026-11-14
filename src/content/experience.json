@@ -1,0 +1,37 @@
+[
+  {
+    "title": "Undergraduate Research Assistant",
+    "org": "Integrated Circuits and Systems Lab, WPI",
+    "place": "Worcester, MA",
+    "when": "Aug 2026 — Present",
+    "kind": "Research",
+    "note": "Wearable and physiological sensing. Currently building closed-loop temperature control for a CO₂ sensor, to hold its operating point stable enough to trust the measurement.",
+    "bullets": [
+      "Advancing transcutaneous blood gas sensing research toward a Spring 2027 IC tapeout at WPI's ICAS Lab."
+    ]
+  },
+  {
+    "title": "Undergraduate Teaching Assistant, ECE 2201 Microelectronics I",
+    "org": "WPI",
+    "place": "Worcester, MA",
+    "when": "Aug 2026 — Present",
+    "kind": "Teaching",
+    "note": "Office hours and labs for the course where everyone meets a MOSFET for the first time.",
+    "bullets": [
+      "Facilitating course instruction and grading for ECE 2201, reinforcing analog and CMOS circuit fundamentals."
+    ]
+  },
+  {
+    "title": "Electrical Engineering Intern, Group 92",
+    "org": "MIT Lincoln Laboratory",
+    "place": "Westford, MA",
+    "when": "May — Aug 2026",
+    "kind": "Industry",
+    "note": "Supported the RF transmitter team at the Lincoln Space Surveillance Complex, designing and building hardware to replace obsolete equipment on the Millstone Hill Radar — a system that has been continuously evolving since 1957, where every upgrade is just the starting point for the next one. Most of the detail is not mine to publish; happy to talk about the parts that are.",
+    "bullets": [
+      "Built schematics, PCBs, and mechanical chassis for RF radar test hardware in a CUI environment.",
+      "Simulated, characterized, and troubleshot RF circuits using spectrum analyzers, scopes, and signal generators.",
+      "Selected components, developed BOMs, and validated hardware performance through bench testing."
+    ]
+  }
+]

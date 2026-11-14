@@ -1,95 +1,102 @@
 # domenicojbruno.github.io
 
-Personal engineering portfolio. Astro static site — no React, no CSS framework,
-no animation library. Total runtime JavaScript is about **7 KB** across the whole
-site, hand-written.
+Personal engineering portfolio, presented as one interactive printed circuit
+board. The home page is the MCU; every other page is a peripheral chip on the
+same board, and navigating is a first-person ride along the copper trace that
+connects them.
 
-Deploys to GitHub Pages on every push to `main`
-(`.github/workflows/deploy.yml`). Pages source must be set to **GitHub Actions**
-in repo settings, not "deploy from a branch".
+Vite + React 18 + TypeScript, Three.js via React Three Fiber, GSAP, Zustand,
+React Router. Static build, no backend, no tracking, no external requests.
 
 ```bash
 npm install
-npm run dev        # http://localhost:4321
-npm run check      # typecheck + filter-math self-check
-npm run build      # -> dist/
+npm run dev            # http://localhost:5173
+npm run check:layout   # design-rule check for the board
+npm run build          # typecheck + production build -> dist/
+npm run og             # regenerate public/og.png from the board layout
 ```
 
-## Structure
+## Deploy
 
-The site is a signal chain: eight sections, each a stage in an analog front-end,
-each with its own accent colour set by one CSS custom property.
-
-| # | Section | id | What it is |
-|---|---------|-----|-----------|
-| 01 | Bias Point | `bias` | Hero, scope trace, ticker |
-| 02 | Operating Point | `operating` | About |
-| 03 | Signal Chain | `chain` | Work index → three case studies |
-| 04 | Playground | `playground` | Live OTA-C filter simulator |
-| 05 | Process Corners | `corners` | Skills + coursework |
-| 06 | Transient Response | `transient` | Timeline |
-| 07 | Off the Bench | `bench` | Personal — the one light-theme section |
-| 08 | Noise Floor | `noise` | Contact |
-
-```
-src/
-  lib/site.ts          identity + section order (nav and <head> read from here)
-  lib/projects.ts      every measured number on the site, in one place
-  lib/filter-math.ts   OTA-C response + digital biquads + self-check
-  lib/canvas.ts        DPR sizing, offscreen pause, reduced-motion, shared
-  lib/reveal.ts        entrance animations + rail highlighting (2 observers)
-  components/          one per section, plus FilterSim and SignalChain
-  pages/work/*.astro   the three case studies
-scripts/prep-assets.mjs  one-off asset pipeline (see below)
-```
+Pushing to `main` builds and deploys to GitHub Pages
+(`.github/workflows/deploy.yml`). In the repo settings, Pages source must be
+**GitHub Actions**. This is a user site served from the domain root, so `base`
+in `vite.config.ts` is `/`; for a project site set it to `/<repo>/`.
+`public/404.html` is the SPA fallback that makes deep links such as `/resume`
+work on Pages.
 
 ## Editing content
 
-Almost nothing is hardcoded in markup:
+Nothing about me is hardcoded in components.
 
-- **Contact details, section names** → `src/lib/site.ts`
-- **Project numbers, the clEAR-ExG block list, smaller builds** → `src/lib/projects.ts`
-- **Skills and coursework** → `src/components/Skills.astro`
-- **Timeline entries** → `src/components/Timeline.astro`
+| What | Where |
+|---|---|
+| Name, intro, contacts, education, skills, coursework, photos | `src/content/profile.json` |
+| About text | `src/content/about.md` |
+| Work experience | `src/content/experience.json` |
+| Extracurriculars | `src/content/extracurriculars.json` |
+| Projects | `src/content/projects/*.md` (frontmatter + Markdown body) |
+| Resume PDF | `public/resume.pdf` |
+| Images | `public/images/...` |
 
-## Assets
+Project frontmatter: `title`, `slug`, `order`, `kind` (`main` or `small`),
+`summary`, `blurb`, `where`, `when`, `role`, and JSON arrays for `team`,
+`filter` (the filter chips), `stack` (tech tags), `stats`, `images`
+(`{src, caption, alt}`), `links` (`{label, href}`), plus an optional `cover`.
+A new project also wants a chip on the board: add a `subchip(...)` line in
+`src/board/layout.ts` with the same slug.
 
-`npm run assets` rebuilds everything web-facing from the raw folders
-(`../Images`, `../Side Hobbies`, `../Pets and Family`, and the event-camera
-directory). It strips EXIF — including GPS — from every photo by construction,
-normalises the Cadence screenshot filenames, transcodes the event-camera GIFs to
-animated WebP (22.6 MB → ~1 MB in the worst case), and draws the `og.png` link
-card. Slow to run; it is a one-off, not part of `build`.
+## Editing the board
 
-Deliberately **not** published: the ECE 524 exemplar paper by other authors, the
-WPI-RAU union agreement, the Xilinx `wave_gen` vendor reference design, and the
-third-party figures pulled from papers in the event-camera folder.
+`src/board/layout.ts` is the PCB, in millimetres (x right, y down, 200 x 150 mm).
+Rendering code only reads its exported `components`, `traces` and `vias`.
 
-## Before launch
+- **Move a part:** change `x, y, rotation` in its `add(type, x, y, rot, {...})` call.
+  Footprints live in `src/board/footprints.ts`.
+- **Reroute a page bus:** each one is a `Path` of compass moves, e.g.
+  `new Path(pin('U1', 6)).toX('W', 80).toX('NW', 70).toX('W', 64).via()...land(pin('U2', 6), 'W')`.
+  Compass moves keep every bend at 45 degrees. `.via()` drops to the inner layer
+  (and becomes a plunge on the ride). `bus({...})` makes the parallel members
+  and staggers their vias; `flank(...)` places rows of passives beside a segment.
+- **Ride tuning** (hills, colours, labels): `src/board/nets.ts`. The camera
+  spline, speed profile, banking and drops are generated from the trace in
+  `src/board/routes.ts`, so a rerouted trace gets a matching ride for free.
+- Always run `npm run check:layout` afterwards. It fails on non-45-degree
+  bends, same-layer crossings, traces through parts, overlapping courtyards and
+  vias under components.
 
-- [x] LinkedIn and GitHub → `src/lib/site.ts`
-- [ ] Headshot → save it as `headshot.jpg` in the raw `Portfolio Website` folder,
-      then `npm run assets` picks it up automatically. Wire into `About.astro`.
-- [ ] Real domain → `site` in `astro.config.mjs` (drives canonical + `og:image`)
-- [ ] CO₂ sensor project — on the CV, no supporting material exists yet
-- [x] Dates reconciled against LinkedIn. Corrections applied: the internship ran
-      **May – Aug 2026** (CV said "Summer 2026") in **Westford** at the Lincoln
-      Space Surveillance Complex, not Lexington. Location is Medford, not Boston.
-      The CV is wrong on both counts and should be fixed.
-- [ ] Two roles on the CV are missing from LinkedIn — the ECE 2201 TA position and
-      the ICS Lab research assistantship. The site lists both; add them to LinkedIn.
-- [ ] Confirm the Miller OTA figures. The CV says "Sept 2025, 54 dB"; the ECE 4902
-      files say Dec 2025, 82.55 dB. The site currently uses the ECE 4902 numbers.
-      If these are two different amplifiers, the second one needs its own entry.
-- [ ] Miller OTA case study has no images — the schematics are trapped in the
-      PDF/PPTX. Export a few and drop them in.
+## Structure
 
-## Verification
+```
+src/
+  content/           profile.json, about.md, experience.json, extracurriculars.json, projects/*.md
+  board/
+    layout.ts        the PCB definition
+    footprints.ts    procedural package templates (no CAD models)
+    geom.ts          45-degree path builder, bus offsets, serpentines, DRC geometry
+    nets.ts          navigation nets: route, colour, label, ride tuning
+    routes.ts        ride splines + speed profiles from the traces
+    svg.ts           top-down SVG renderer (2D mode, 3D board texture, OG image)
+    view.ts          camera framing shared by 3D, labels and CSS
+  scene/             Scene, Board, Traces (pulse shader), CurrentPulse, CameraRig, Effects
+  ui/                Header, NavLabels, DatasheetPanel, Board2D, Boot, pages/*
+  state/store.ts     page / ride state machine
+  audio/sound.ts     synthesised ride sound (muted by default)
+scripts/             check-layout.ts, make-og.ts
+```
 
-- `npm run check:math` — asserts the published 101.3 Hz EEG corner actually falls
-  out of the published 10.4 nA bias current through the subthreshold model, that
-  the responses have the right shape, and that the notch really removes hum from
-  the demo trace. If the simulator is ever silently wrong, this is what catches it.
-- `npm run build && npx serve dist` — then Lighthouse against the built output.
-- Toggle "reduce motion" in the OS and reload: every canvas should freeze on one
-  static frame and no ambient animation should run.
+## Behaviour notes
+
+- Clicking a label or header link plays the ride; the URL updates on arrival.
+  Back/forward plays the matching ride. Direct loads land on the page, no ride.
+- `prefers-reduced-motion` swaps the ride for a gentle top-down glide.
+- Below 768 px wide, or without WebGL, the site renders the same board as SVG
+  and never downloads three.js (`?flat` forces this mode for testing).
+- The canvas renders on demand: nothing is drawn while a content page is open.
+- Sound is off until the speaker button in the header is pressed.
+
+## Not published on purpose
+
+Family photos, the ECE 524 exemplar paper by other authors, the WPI-RAU union
+agreement, vendor reference designs and third-party paper figures stay in the
+raw folders outside this repo.
